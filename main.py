@@ -3,10 +3,12 @@ from market_maker import MarketMaker
 from liquidity_consumer import LiquidityConsumer
 from momentum_trader import MomentumTrader
 from mean_reversion_trader import MeanReversionTrader
+from noise_trader import NoiseTrader
 import util
 import time
 import random
 from pprint import pprint
+
 
 def main():
 	exchange = Exchange()
@@ -41,7 +43,7 @@ def main():
 		ask_order, bid_order = market_maker.work(exchange, cur_time)
 		if ask_order is not None:
 			# cancel any existing orders from market maker
-			exchange.del_any_existing_orders_by_trader(market_maker.trader_id)
+			exchange.del_any_existing_orders_by_trader(market_maker.trader_id, cur_time)
 			# sent ask order to exchange
 			trades = exchange.make_match(cur_time, ask_order, False)
 			util.process_trades(trades, traders, ask_order, cur_time)
@@ -71,7 +73,6 @@ def main():
 			util.process_trades(trades, traders, order, cur_time)
 
 		# noise trader
-		
 
 		cur_time += 1
 	pprint(exchange.tape)

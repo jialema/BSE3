@@ -1,5 +1,4 @@
 import sys
-
 from trader import Trader
 import random
 import math
@@ -67,7 +66,7 @@ class NoiseTrader(Trader):
 					order = self.submit_order(buy_or_sell, v_t, price_off_spr, "", exchange, cur_time)
 			else:
 				# cancel limit order
-				pass
+				self.del_any_existing_orders_by_trader(self.trader_id, cur_time)
 		return order
 
 	def submit_order(self, buy_or_sell=None, v_t=None, price=None, action_type="", exchange=None, cur_time=None):
@@ -81,7 +80,7 @@ class NoiseTrader(Trader):
 				price = exchange.bids.best_price
 				order = self.buy(price, v_t, cur_time)
 			else:
-				sys.exit("[Error] bad action_type")
+				sys.exit("[Error] bad action_type value")
 		elif buy_or_sell == "sell":
 			if price is not None:
 				order = self.sell(price, v_t, cur_time)
@@ -96,3 +95,18 @@ class NoiseTrader(Trader):
 		else:
 			sys.exit("[Error] bad buy_or_sell value")
 		return order
+
+	def del_any_existing_orders_by_trader(self, trader_id, cur_time):
+		"""
+		delete any existing orders from a certain trader
+		@param trader_id: ID of a certain trader
+		@param cur_time: current time
+		"""
+		if self.bids.orders.contain(trader_id):
+			self.bids.book_del(trader_id)
+			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
+			self.tape.append(cancel_record)
+		if self.asks.orders.contains(trader_id):
+			self.asks.book_del(trader_id)
+			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
+			self.tape.append(cancel_record)

@@ -23,7 +23,7 @@ class Exchange(OrderBook):
 		@return:
 		"""
 		order.quote_id = self.quote_id
-		self.quote_id = order.quote_id + 1
+		self.quote_id += 1
 		if order.order_type == 'Bid':
 			response = self.bids.book_add(order)
 			best_price = self.bids.lob_anon[-1][0]
@@ -36,12 +36,12 @@ class Exchange(OrderBook):
 			self.asks.best_trader_id = self.asks.lob[best_price][1][0][2]
 		return [order.quote_id, response]
 
-	def del_any_existing_orders_by_trader(self, trader_id):
+	def del_any_existing_orders_by_trader(self, trader_id, cur_time):
 		"""
 		delete any existing orders from a certain trader
 		@param trader_id: ID of a certain trader, like market maker
+		@param cur_time: current time
 		"""
-		cur_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 		if self.bids.orders.contain(trader_id):
 			self.bids.book_del(trader_id)
 			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
