@@ -36,6 +36,7 @@ class NoiseTrader(Trader):
 		self.alpha_off_spr = 0.726
 
 	def work(self, exchange, cur_time):
+		order = None
 		if random.random() < self.delta_nt:
 			if random.random() < self.buy_or_sell_prob:
 				buy_or_sell = "buy"
@@ -45,59 +46,35 @@ class NoiseTrader(Trader):
 			# submit market order
 			if random_action_prob < self.alpha_m:
 				v_t = math.exp(self.mu_mo + self.sigma_mo * random.random())
-
-				if buy_or_sell == "buy":
-					best_price = exchange.asks.best_price
-					order = self.buy(best_price, v_t, cur_time)
-				elif buy_or_sell == "sell":
-					best_price = exchange.bids.best_price
-					order = self.sell(best_price, v_t, cur_time)
-
+				order = self.submit_order(buy_or_sell, v_t, None, "submit market order", exchange, cur_time)
 			elif random_action_prob < self.alpha_m + self.alpha_l:
 				# submit limit order
 				random_limit_order_prob = random.random()
 				v_t = math.exp(self.mu_lo + self.sigma_lo * random.random())
-				# crossing limit order
+				# cross limit order
 				if random_limit_order_prob < self.alpha_crs:
-
-					if buy_or_sell == "buy":
-						best_price = exchange.asks.best_price
-						order = self.buy(best_price, v_t, cur_time)
-					elif buy_or_sell == "sell":
-						best_price = exchange.bids.best_price
-						order = self.sell(best_price, v_t, cur_time)
-
+					order = self.submit_order(buy_or_sell, v_t, None, "cross limit order", exchange, cur_time)
 				elif random_limit_order_prob < self.alpha_crs + self.alpha_in_spr:
 					# inside spread limit order
 					price_in_spr = random.randint(exchange.bids.best_price, exchange.asks.best_price)
-					if buy_or_sell == "buy":
-						order = self.buy(price_in_spr, v_t, cur_time)
-					elif buy_or_sell == "sell":
-						order = self.sell(price_in_spr, v_t, cur_time)
+					order = self.submit_order(buy_or_sell, v_t, price_in_spr, "", exchange, cur_time)
 				elif random_limit_order_prob < self.alpha_crs + self.alpha_in_spr + self.alpha_spr:
 					# spread limit order
-					if buy_or_sell == "buy":
-						price = exchange.bids.best_price
-						order = self.buy(price, v_t, cur_time)
-					elif buy_or_sell == "sell":
-						price = exchange.asks.best_price
-						order = self.sell(price, v_t, cur_time)
+					order = self.submit_order(buy_or_sell, v_t, None, "spread limit order", exchange, cur_time)
 				else:
 					# off-spread limit order
 					price_off_spr = self.x_min_off_spr * (1 - random.random()) ** (-1 / (self.beta_off_spr - 1))
-					if buy_or_sell == "buy":
-						order = self.buy(price_off_spr, v_t, cur_time)
-					elif buy_or_sell == "sell":
-						order = self.sell(price_off_spr, v_t, cur_time)
+					order = self.submit_order(buy_or_sell, v_t, price_off_spr, "", exchange, cur_time)
 			else:
 				# cancel limit order
 				pass
+		return order
 
 	def submit_order(self, buy_or_sell=None, v_t=None, price=None, action_type="", exchange=None, cur_time=None):
 		if buy_or_sell == "buy":
 			if price is not None:
 				order = self.buy(price, v_t, cur_time)
-			elif action_type == "submit market order":
+			elif action_type in ["submit market order", "cross limit order"]:
 				best_price = exchange.asks.best_price
 				order = self.buy(best_price, v_t, cur_time)
 			elif action_type == "spread limit order":
@@ -108,7 +85,7 @@ class NoiseTrader(Trader):
 		elif buy_or_sell == "sell":
 			if price is not None:
 				order = self.sell(price, v_t, cur_time)
-			elif action_type == "submit market order":
+			elif action_type in ["submit market order", "cross limit order"]:
 				best_price = exchange.bids.best_price
 				order = self.sell(best_price, v_t, cur_time)
 			elif action_type == "spread limit order":
