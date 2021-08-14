@@ -12,10 +12,14 @@ class Trader:
 		self.wealth = 0
 
 	def buy(self, bid_price, quantity, cur_time):
+		if bid_price is None or quantity is None:
+			return None
 		order = Order(trader_id=self.trader_id, order_type="Bid", price=bid_price, quantity=quantity, time=cur_time)
 		return order
 
 	def sell(self, ask_price, quantity, cur_time):
+		if ask_price is None or quantity is None:
+			return None
 		order = Order(trader_id=self.trader_id, order_type="Ask", price=ask_price, quantity=quantity, time=cur_time)
 		return order
 

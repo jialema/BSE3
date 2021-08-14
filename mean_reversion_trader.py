@@ -38,7 +38,7 @@ class MeanReversionTrader(Trader):
 		@return: None
 		"""
 		length_to_be_processed = len(exchange.all_deal_prices) - len(self.all_ema)
-		for price_t in range(exchange.all_deal_prices[-length_to_be_processed:]):
+		for price_t in exchange.all_deal_prices[-length_to_be_processed:]:
 			self.ema_t = self.ema_t + self.alpha * (price_t - self.ema_t)
 			self.all_ema.append(self.ema_t)
 		self.sigma_t = np.std(self.ema_t, ddof=1)

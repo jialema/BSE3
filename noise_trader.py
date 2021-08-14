@@ -44,17 +44,19 @@ class NoiseTrader(Trader):
 			random_action_prob = random.random()
 			# submit market order
 			if random_action_prob < self.alpha_m:
-				v_t = math.exp(self.mu_mo + self.sigma_mo * random.random())
+				v_t = int(math.exp(self.mu_mo + self.sigma_mo * random.random()) + 0.5)
 				order = self.submit_order(buy_or_sell, v_t, None, "submit market order", exchange, cur_time)
 			elif random_action_prob < self.alpha_m + self.alpha_l:
 				# submit limit order
 				random_limit_order_prob = random.random()
-				v_t = math.exp(self.mu_lo + self.sigma_lo * random.random())
+				v_t = int(math.exp(self.mu_lo + self.sigma_lo * random.random()) + 0.5)
 				# cross limit order
 				if random_limit_order_prob < self.alpha_crs:
 					order = self.submit_order(buy_or_sell, v_t, None, "cross limit order", exchange, cur_time)
 				elif random_limit_order_prob < self.alpha_crs + self.alpha_in_spr:
 					# inside spread limit order
+					if exchange.bids.best_price is None or exchange.asks.best_price is None:
+						return None
 					price_in_spr = random.randint(exchange.bids.best_price, exchange.asks.best_price)
 					order = self.submit_order(buy_or_sell, v_t, price_in_spr, "", exchange, cur_time)
 				elif random_limit_order_prob < self.alpha_crs + self.alpha_in_spr + self.alpha_spr:
@@ -66,10 +68,12 @@ class NoiseTrader(Trader):
 					order = self.submit_order(buy_or_sell, v_t, price_off_spr, "", exchange, cur_time)
 			else:
 				# cancel limit order
-				self.del_any_existing_orders_by_trader(self.trader_id, cur_time)
+				exchange.del_trader_all_orders(self.trader_id, cur_time)
 		return order
 
 	def submit_order(self, buy_or_sell=None, v_t=None, price=None, action_type="", exchange=None, cur_time=None):
+		if v_t == 0:
+			sys.exit("[Error] bad v_t value")
 		if buy_or_sell == "buy":
 			if price is not None:
 				order = self.buy(price, v_t, cur_time)
@@ -77,8 +81,8 @@ class NoiseTrader(Trader):
 				best_price = exchange.asks.best_price
 				order = self.buy(best_price, v_t, cur_time)
 			elif action_type == "spread limit order":
-				price = exchange.bids.best_price
-				order = self.buy(price, v_t, cur_time)
+				best_price = exchange.bids.best_price
+				order = self.buy(best_price, v_t, cur_time)
 			else:
 				sys.exit("[Error] bad action_type value")
 		elif buy_or_sell == "sell":
@@ -88,25 +92,10 @@ class NoiseTrader(Trader):
 				best_price = exchange.bids.best_price
 				order = self.sell(best_price, v_t, cur_time)
 			elif action_type == "spread limit order":
-				price = exchange.asks.best_price
-				order = self.sell(price, v_t, cur_time)
+				best_price = exchange.asks.best_price
+				order = self.sell(best_price, v_t, cur_time)
 			else:
 				sys.exit("[Error] bad action_type value")
 		else:
 			sys.exit("[Error] bad buy_or_sell value")
 		return order
-
-	def del_any_existing_orders_by_trader(self, trader_id, cur_time):
-		"""
-		delete any existing orders from a certain trader
-		@param trader_id: ID of a certain trader
-		@param cur_time: current time
-		"""
-		if self.bids.orders.contain(trader_id):
-			self.bids.book_del(trader_id)
-			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
-			self.tape.append(cancel_record)
-		if self.asks.orders.contains(trader_id):
-			self.asks.book_del(trader_id)
-			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
-			self.tape.append(cancel_record)

@@ -1,3 +1,4 @@
+import sys
 
 
 class OrderBookHalf:
@@ -19,7 +20,7 @@ class OrderBookHalf:
 		self.best_trader_id = None
 		self.worst_price = worst_price
 		self.session_extreme = None  # most extreme price quoted in this session
-		self.number_orders = 0  # how many orders?
+		self.number_traders = 0  # how many orders?
 		self.lob_depth = 0  # how many different prices on lob?
 
 	def anonymize_lob(self):
@@ -41,17 +42,17 @@ class OrderBookHalf:
 		"""
 		self.lob = {}
 		for trader_id in self.orders:
-			order = self.orders.get(trader_id)
-			price = order.price
-			if price in self.lob:
-				# update existing entry
-				quantity = self.lob[price][0]
-				order_list = self.lob[price][1]
-				order_list.append([order.time, order.quantity, order.trader_id, order.quote_id])
-				self.lob[price] = [quantity + order.quantity, order_list]
-			else:
-				# create a new dictionary entry
-				self.lob[price] = [order.quantity, [[order.time, order.quantity, order.trader_id, order.quote_id]]]
+			orders_by_trader = self.orders.get(trader_id)
+			for order in orders_by_trader:
+				if order.price in self.lob:
+					# update existing entry
+					quantity = self.lob[order.price][0]
+					order_list = self.lob[order.price][1]
+					order_list.append([order.time, order.quantity, order.trader_id, order.quote_id])
+					self.lob[order.price] = [quantity + order.quantity, order_list]
+				else:
+					self.lob[order.price] = [order.quantity, [[order.time, order.quantity, order.trader_id, order.quote_id]]]
+
 		# create anonymized version
 		self.anonymize_lob()
 		# record best price and associated trader-id
@@ -74,14 +75,21 @@ class OrderBookHalf:
 		checks whether length or order list has changed, to distinguish addition/overwrite
 		"""
 		# if this is an ask, does the price set a new extreme-high record?
+		# print(order.price, order.quantity, order.time)
+		# print()
+		# if self.session_extreme is None or order.price > self.session_extreme:
+		# 	self.session_extreme = order.price
 		if (self.book_type == 'Ask') and ((self.session_extreme is None) or (order.price > self.session_extreme)):
-			self.session_extreme = int(order.price)
+			self.session_extreme = order.price
 
-		number_orders = self.number_orders
-		self.orders[order.trader_id] = order
-		self.number_orders = len(self.orders)
+		number_traders = self.number_traders
+		if order.trader_id in self.orders:
+			self.orders[order.trader_id].append(order)
+		else:
+			self.orders[order.trader_id] = [order]
+		self.number_traders = len(self.orders)
 		self.build_lob()
-		if number_orders != self.number_orders:
+		if number_traders != self.number_traders:
 			return 'Addition'
 		else:
 			return 'Overwrite'
@@ -94,7 +102,7 @@ class OrderBookHalf:
 		"""
 		if self.orders.get(trader_id) is not None:
 			del (self.orders[trader_id])
-			self.number_orders = len(self.orders)
+			self.number_traders = len(self.orders)
 			self.build_lob()
 
 	def delete_best(self):
@@ -103,31 +111,17 @@ class OrderBookHalf:
 		the Trader ID of the deleted order is return-value, as counterparty to the trade
 		"""
 		best_price_orders = self.lob[self.best_price]
-		# time priority principle
 		best_price_quantity = best_price_orders[0]
+		if best_price_quantity != len(best_price_orders[1]):
+			sys.exit("[Error] bad best_price_quantity.")
+		# time priority principle, here the 0 means the first order to arrive
 		best_price_counterparty = best_price_orders[1][0][2]
-		if best_price_quantity == 1:
-			# here the order deletes the best price
-			del (self.lob[self.best_price])
+		if len(self.orders[best_price_counterparty]) == 1:
 			del (self.orders[best_price_counterparty])
-			self.number_orders = self.number_orders - 1
-			if self.number_orders > 0:
-				if self.book_type == 'Bid':
-					self.best_price = max(self.lob.keys())
-				else:
-					self.best_price = min(self.lob.keys())
-				self.lob_depth = len(self.lob.keys())
-			else:
-				self.best_price = self.worst_price
-				self.lob_depth = 0
+			self.number_traders -= 1
 		else:
-			"""
-			best_bid_quantity > 1 so the order decrements the quantity of the best bid
-			update the lob with the decremented order data
-			"""
-			self.lob[self.best_price] = [best_price_quantity - 1, best_price_orders[1][1:]]
-			# update the bid list: counterpart's bid has been deleted
-			del (self.orders[best_price_counterparty])
-			self.number_orders = self.number_orders - 1
+			for order in self.orders[best_price_counterparty]:
+				if order.quote_id == best_price_orders[1][0][-1]:
+					self.orders[best_price_counterparty].remove(order)
 		self.build_lob()
 		return best_price_counterparty

@@ -13,21 +13,14 @@ class MomentumTrader(Trader):
 
 	def work(self, exchange, cur_time):
 		order = None
+		if len(exchange.all_deal_prices) < self.n_r:
+			return None
 		if random.random() < self.delta_mt:
 			roc_t = (exchange.all_deal_prices[-1] - exchange.all_deal_prices[-self.n_r]) \
 					/ exchange.all_deal_prices[-self.n_r]
-			v_t = abs(roc_t) * self.wealth
+			v_t = int(abs(roc_t) * self.wealth + 0.5)
 			if roc_t >= self.k:
-				best_price = exchange.asks.lob_anon[0][0]
-				order = self.buy(best_price, v_t, cur_time)
+				order = self.buy(exchange.asks.best_price, v_t, cur_time)
 			elif roc_t <= -self.k:
-				best_price = exchange.bids.lob_anon[-1][0]
-				order = self.sell(best_price, v_t, cur_time)
-
-			if self.buy_or_sell == "buy":
-				best_price = exchange.asks.lob_anon[0][0]
-				order = self.buy(best_price, v_t, cur_time)
-			elif self.buy_or_sell == "sell":
-				best_price = exchange.bids.lob_anon[-1][0]
-				order = self.sell(best_price, v_t, cur_time)
+				order = self.sell(exchange.bids.best_price, v_t, cur_time)
 		return order

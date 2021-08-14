@@ -36,17 +36,17 @@ class Exchange(OrderBook):
 			self.asks.best_trader_id = self.asks.lob[best_price][1][0][2]
 		return [order.quote_id, response]
 
-	def del_any_existing_orders_by_trader(self, trader_id, cur_time):
+	def del_trader_all_orders(self, trader_id, cur_time):
 		"""
 		delete any existing orders from a certain trader
 		@param trader_id: ID of a certain trader, like market maker
 		@param cur_time: current time
 		"""
-		if self.bids.orders.contain(trader_id):
+		if trader_id in self.bids.orders:
 			self.bids.book_del(trader_id)
 			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
 			self.tape.append(cancel_record)
-		if self.asks.orders.contains(trader_id):
+		if trader_id in self.asks.orders:
 			self.asks.book_del(trader_id)
 			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
 			self.tape.append(cancel_record)
@@ -72,13 +72,15 @@ class Exchange(OrderBook):
 
 	def make_match(self, cur_time, order, verbose):
 		trades = []
-		if order.quantity == 1:
+		if order.quantity == 0:
+			sys.exit("[Error] bad order.quantity")
+		elif order.quantity == 1:
 			trade = self.process_order(cur_time, order, verbose)
 			trades.append(trade)
 		else:
 			# split order
-			for i in range(order.quantity):
-				order_with_quantity_one = Order(order.trader_id, order.order_type, order.price, order.quantity, order.time)
+			for _ in range(order.quantity):
+				order_with_quantity_one = Order(order.trader_id, order.order_type, order.price, 1, order.time)
 				trade = self.process_order(cur_time, order_with_quantity_one, verbose)
 				trades.append(trade)
 		return trades
@@ -92,17 +94,19 @@ class Exchange(OrderBook):
 		order_price = order.price
 		counterparty = None
 		# add it to the order lists and overwrite any previous order
-		[quote_id, response] = self.add_order(order, verbose)
+		[quote_id, response] = self.add_order(order)
 		order.quote_id = quote_id
 		if verbose:
 			print('QUID: order.quid=%d' % order.quote_id)
 			print('RESPONSE: %s' % response)
+		if self.asks.best_price is None or self.bids.best_price is None:
+			return None
 		best_ask = self.asks.best_price
 		best_ask_trader_id = self.asks.best_trader_id
 		best_bid = self.bids.best_price
 		best_bid_trader_id = self.bids.best_trader_id
 		if order.order_type == 'Bid':
-			if self.asks.number_orders > 0 and best_bid >= best_ask:
+			if self.asks.number_traders > 0 and best_bid >= best_ask:
 				# bid lifts the best ask
 				if verbose:
 					print("Bid $%s lifts best ask" % order_price)
@@ -116,7 +120,7 @@ class Exchange(OrderBook):
 				# delete the bid that was the latest order
 				self.bids.delete_best()
 		elif order.order_type == 'Ask':
-			if self.bids.number_orders > 0 and best_ask <= best_bid:
+			if self.bids.number_traders > 0 and best_ask <= best_bid:
 				# ask hits the best bid
 				if verbose:
 					print("Ask $%s hits best bid" % order_price)
@@ -180,13 +184,13 @@ class Exchange(OrderBook):
 		public_data['bids'] = {
 			'best': self.bids.best_price,
 			'worst': self.bids.worstprice,
-			'n': self.bids.number_orders,
+			'n': self.bids.number_traders,
 			'lob': self.bids.lob_anon}
 		public_data['asks'] = {
 			'best': self.asks.best_price,
 			'worst': self.asks.worstprice,
 			'sess_hi': self.asks.session_extreme,
-			'n': self.asks.number_orders,
+			'n': self.asks.number_traders,
 			'lob': self.asks.lob_anon}
 		public_data['quote_id'] = self.quote_id
 		public_data['tape'] = self.tape

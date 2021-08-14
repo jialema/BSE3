@@ -1,5 +1,6 @@
 from trader import Trader
 import random
+import sys
 
 
 class LiquidityConsumer(Trader):
@@ -24,15 +25,20 @@ class LiquidityConsumer(Trader):
 		order = None
 		phi_t = None
 		best_price = None
+
 		# look at the current volume available at the opposite best price, phi_t
 		if self.buy_or_sell == "buy":
+			if len(exchange.asks.lob_anon) == 0:
+				return None
 			phi_t = exchange.asks.lob_anon[0][1]
 			best_price = exchange.asks.lob_anon[0][0]
 		elif self.buy_or_sell == "sell":
+			if len(exchange.bids.lob_anon) == 0:
+				return None
 			phi_t = exchange.bids.lob_anon[-1][1]
 			best_price = exchange.bids.lob_anon[-1][0]
 		else:
-			print("[Warn] bad self.buy_or_sell value.")
+			sys.exit("[Error] bad self.buy_or_sell value.")
 		if random.random() < self.delta_lc and self.h_t > 0:
 			"""
 			If the remaining volume of trader's large order, self.h_t, is less than phi_t, the agent 
@@ -48,7 +54,7 @@ class LiquidityConsumer(Trader):
 			elif self.buy_or_sell == "sell":
 				order = self.sell(best_price, v_t, cur_time)
 			else:
-				print("[Warn] bad self.buy_or_sell value.")
+				sys.exit("[Error] bad self.buy_or_sell value.")
 			self.h_t -= v_t
 		return order
 
