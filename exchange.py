@@ -70,22 +70,51 @@ class Exchange(OrderBook):
 			# neither bid nor ask?
 			sys.exit('bad order type in del_quote()')
 
-	def make_match(self, cur_time, order, verbose):
-		trades = []
-		if order.quantity == 0:
-			sys.exit("[Error] bad order.quantity")
-		elif order.quantity == 1:
-			trade = self.process_order(cur_time, order, verbose)
-			trades.append(trade)
-		else:
-			# split order
-			for _ in range(order.quantity):
-				order_with_quantity_one = Order(order.trader_id, order.order_type, order.price, 1, order.time)
-				trade = self.process_order(cur_time, order_with_quantity_one, verbose)
-				trades.append(trade)
-		return trades
+	def make_match(self, order, cur_time):
+		if self.asks.best_price is None or self.bids.best_price is None:
+			return None
+		best_ask_price = self.asks.best_price
+		best_ask_trader_id = self.asks.best_trader_id
+		best_bid_price = self.bids.best_price
+		best_bid_trader_id = self.bids.best_trader_id
+
+		if best_bid_price >= best_ask_price:
+			if order.order_type == "Bid":
+				price = best_ask_price
+			elif order.order_type == "Ask":
+				price = best_bid_price
+			else:
+				sys.exit("[Error] bad order.order_type value")
+			quantity = min(self.asks.best_quantity, self.bids.best_quantity)
+			transaction_record = {
+				'type': 'Trade',
+				'time': cur_time,
+				'price': price,
+				'ask': best_ask_trader_id,
+				'bid': best_bid_trader_id,
+				'quantity': quantity
+			}
+			self.asks.delete_best(quantity)
+			self.bids.delete_best(quantity)
+			self.tape.append(transaction_record)
+			self.all_deal_prices.append(price)
+			self.price = price
+			return transaction_record
+		return None
 
 	def process_order(self, cur_time, order, verbose):
+		[quote_id, response] = self.add_order(order)
+		order.quote_id = quote_id
+		trades = []
+		while True:
+			trade = self.make_match(order, cur_time)
+			if trade is not None:
+				trades.append(trade)
+			else:
+				break
+		return trades
+
+	def process_order1(self, cur_time, order, verbose):
 		"""
 		receive an order and either add it to the relevant LOB (ie treat as limit order)
 		or if it crosses the best counterparty offer, execute it (treat as a market order)

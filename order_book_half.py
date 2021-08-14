@@ -18,6 +18,7 @@ class OrderBookHalf:
 		# summary stats
 		self.best_price = None
 		self.best_trader_id = None
+		self.best_quantity = None
 		self.worst_price = worst_price
 		self.session_extreme = None  # most extreme price quoted in this session
 		self.number_traders = 0  # how many orders?
@@ -61,10 +62,13 @@ class OrderBookHalf:
 				self.best_price = self.lob_anon[-1][0]
 			else:
 				self.best_price = self.lob_anon[0][0]
+			# time priority principle
 			self.best_trader_id = self.lob[self.best_price][1][0][2]
+			self.best_quantity = self.lob[self.best_price][1][0][1]
 		else:
 			self.best_price = None
 			self.best_trader_id = None
+			self.best_quantity = None
 
 	def book_add(self, order):
 		"""
@@ -105,23 +109,19 @@ class OrderBookHalf:
 			self.number_traders = len(self.orders)
 			self.build_lob()
 
-	def delete_best(self):
+	def delete_best(self, quantity):
 		"""
 		delete order: when the best bid/ask has been hit, delete it from the book
 		the Trader ID of the deleted order is return-value, as counterparty to the trade
 		"""
 		best_price_orders = self.lob[self.best_price]
-		best_price_quantity = best_price_orders[0]
-		if best_price_quantity != len(best_price_orders[1]):
-			sys.exit("[Error] bad best_price_quantity.")
 		# time priority principle, here the 0 means the first order to arrive
-		best_price_counterparty = best_price_orders[1][0][2]
-		if len(self.orders[best_price_counterparty]) == 1:
-			del (self.orders[best_price_counterparty])
-			self.number_traders -= 1
-		else:
-			for order in self.orders[best_price_counterparty]:
-				if order.quote_id == best_price_orders[1][0][-1]:
-					self.orders[best_price_counterparty].remove(order)
+		best_price_trader_id = best_price_orders[1][0][2]
+		best_price_order_time = best_price_orders[1][0][0]
+		for order in self.orders[best_price_trader_id]:
+			if order.time == best_price_order_time:
+				order.quantity -= quantity
+			if order.quantity == 0:
+				self.orders[best_price_trader_id].remove(order)
 		self.build_lob()
-		return best_price_counterparty
+

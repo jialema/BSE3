@@ -57,7 +57,7 @@ class NoiseTrader(Trader):
 					# inside spread limit order
 					if exchange.bids.best_price is None or exchange.asks.best_price is None:
 						return None
-					price_in_spr = random.randint(exchange.bids.best_price, exchange.asks.best_price)
+					price_in_spr = random.uniform(exchange.bids.best_price, exchange.asks.best_price)
 					order = self.submit_order(buy_or_sell, v_t, price_in_spr, "", exchange, cur_time)
 				elif random_limit_order_prob < self.alpha_crs + self.alpha_in_spr + self.alpha_spr:
 					# spread limit order

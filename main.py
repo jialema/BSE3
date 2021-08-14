@@ -34,6 +34,7 @@ def main():
 	traders[mean_reversion_trader.trader_id] = mean_reversion_trader
 	traders[noise_trader.trader_id] = noise_trader
 
+	logger = util.create_log()
 	"""
 	a simulated day is divided into 300,000 periods, 
 	# approximately the number of 10ths of a second in an 8.5h trading day
@@ -52,10 +53,10 @@ def main():
 			# cancel any existing orders from market maker
 			exchange.del_trader_all_orders(market_maker.trader_id, cur_time)
 			# sent ask order to exchange
-			trades = exchange.make_match(cur_time, ask_order, False)
+			trades = exchange.process_order(cur_time, ask_order, False)
 			util.process_trades(trades, traders, ask_order, cur_time)
 			# sent bid order to exchange
-			trades = exchange.make_match(cur_time, bid_order, False)
+			trades = exchange.process_order(cur_time, bid_order, False)
 			util.process_trades(trades, traders, bid_order, cur_time)
 
 		# liquidity consumer
@@ -66,7 +67,7 @@ def main():
 		order = liquidity_consumer.work(exchange, cur_time)
 		print(order)
 		if order is not None:
-			trades = exchange.make_match(cur_time, order, False)
+			trades = exchange.process_order(cur_time, order, False)
 			util.process_trades(trades, traders, order, cur_time)
 
 		# momentum trader
@@ -74,7 +75,7 @@ def main():
 		order = momentum_trader.work(exchange, cur_time)
 		print(order)
 		if order is not None:
-			trades = exchange.make_match(cur_time, order, False)
+			trades = exchange.process_order(cur_time, order, False)
 			util.process_trades(trades, traders, order, cur_time)
 
 		# mean reversion trader
@@ -82,7 +83,7 @@ def main():
 		order = mean_reversion_trader.work(exchange, cur_time)
 		print(order)
 		if order is not None:
-			trades = exchange.make_match(cur_time, order, False)
+			trades = exchange.process_order(cur_time, order, False)
 			util.process_trades(trades, traders, order, cur_time)
 
 		# noise trader
@@ -90,9 +91,9 @@ def main():
 		order = noise_trader.work(exchange, cur_time)
 		print(order)
 		if order is not None:
-			trades = exchange.make_match(cur_time, order, False)
+			trades = exchange.process_order(cur_time, order, False)
 			util.process_trades(trades, traders, order, cur_time)
-
+		logger.debug(exchange.price)
 		cur_time += 1
 	pprint(exchange.tape)
 
