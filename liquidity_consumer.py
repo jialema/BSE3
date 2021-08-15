@@ -23,9 +23,6 @@ class LiquidityConsumer(Trader):
 
 	def work(self, exchange, cur_time):
 		order = None
-		phi_t = None
-		best_price = None
-
 		# look at the current volume available at the opposite best price, phi_t
 		if self.buy_or_sell == "buy":
 			if len(exchange.asks.lob_anon) == 0:

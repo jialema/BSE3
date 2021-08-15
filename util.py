@@ -6,13 +6,18 @@ def create_log():
 	logger = logging.getLogger("logger")
 	logger.setLevel(logging.DEBUG)
 
-	file_handler = logging.FileHandler("bse.log")
+	file_handler = logging.FileHandler("bse.log", "w", encoding='utf-8')
 	file_handler.setLevel(logging.DEBUG)
+
+	stream_handler = logging.StreamHandler()
+	stream_handler.setLevel(logging.INFO)
 
 	formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 	file_handler.setFormatter(formatter)
+	stream_handler.setFormatter(formatter)
 
 	logger.addHandler(file_handler)
+	logger.addHandler(stream_handler)
 	return logger
 
 def process_trades(trades, traders, order, cur_time):
@@ -31,9 +36,6 @@ def get_code_position():
 	return position
 
 
-logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(levelname)s -%(message)s')
-logging.debug('Some debugging details.')
-logging.info('The logging module is working')
-logging.warning('An error message is about to be logged.')
-logging.error('An error has occurred.')
-logging.critical('The program is unable to recover!')
+logger = create_log()
+logger.debug("123")
+logger.debug("456")

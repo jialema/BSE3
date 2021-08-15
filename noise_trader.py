@@ -36,6 +36,10 @@ class NoiseTrader(Trader):
 
 	def work(self, exchange, cur_time):
 		order = None
+		if exchange.bids.best_price is None:
+			exchange.bids.best_price = exchange.price
+		if exchange.asks.best_price is None:
+			exchange.asks.best_price = exchange.price
 		if random.random() < self.delta_nt:
 			if random.random() < self.buy_or_sell_prob:
 				buy_or_sell = "buy"
@@ -55,8 +59,6 @@ class NoiseTrader(Trader):
 					order = self.submit_order(buy_or_sell, v_t, None, "cross limit order", exchange, cur_time)
 				elif random_limit_order_prob < self.alpha_crs + self.alpha_in_spr:
 					# inside spread limit order
-					if exchange.bids.best_price is None or exchange.asks.best_price is None:
-						return None
 					price_in_spr = random.uniform(exchange.bids.best_price, exchange.asks.best_price)
 					order = self.submit_order(buy_or_sell, v_t, price_in_spr, "", exchange, cur_time)
 				elif random_limit_order_prob < self.alpha_crs + self.alpha_in_spr + self.alpha_spr:
@@ -65,7 +67,7 @@ class NoiseTrader(Trader):
 				else:
 					# off-spread limit order
 					price_off_spr = self.x_min_off_spr * (1 - random.random()) ** (-1 / (self.beta_off_spr - 1))
-					order = self.submit_order(buy_or_sell, v_t, price_off_spr, "", exchange, cur_time)
+					order = self.submit_order(buy_or_sell, v_t, price_off_spr, "off-spread limit order", exchange, cur_time)
 			else:
 				# cancel limit order
 				exchange.del_trader_all_orders(self.trader_id, cur_time)
@@ -75,7 +77,10 @@ class NoiseTrader(Trader):
 		if v_t == 0:
 			sys.exit("[Error] bad v_t value")
 		if buy_or_sell == "buy":
-			if price is not None:
+			if action_type == "off-spread limit order":
+				price = exchange.bids.best_price - price
+				order = self.buy(price, v_t, cur_time)
+			elif price is not None:
 				order = self.buy(price, v_t, cur_time)
 			elif action_type in ["submit market order", "cross limit order"]:
 				best_price = exchange.asks.best_price
@@ -86,7 +91,10 @@ class NoiseTrader(Trader):
 			else:
 				sys.exit("[Error] bad action_type value")
 		elif buy_or_sell == "sell":
-			if price is not None:
+			if action_type == "off-spread limit order":
+				price = exchange.asks.best_price + price
+				order = self.sell(price, v_t, cur_time)
+			elif price is not None:
 				order = self.sell(price, v_t, cur_time)
 			elif action_type in ["submit market order", "cross limit order"]:
 				best_price = exchange.bids.best_price

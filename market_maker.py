@@ -29,6 +29,7 @@ class MarketMaker(Trader):
 		If there is no best price, the market maker does not operate, because there is no trading demand.
 		The market maker is to provide market liquidity.
 		"""
+
 		if exchange.bids.best_price is not None or exchange.asks.best_price is not None:
 			if exchange.bids.best_price is None:
 				best_bid_price = exchange.price

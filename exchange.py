@@ -71,7 +71,7 @@ class Exchange(OrderBook):
 			sys.exit('bad order type in del_quote()')
 
 	def make_match(self, order, cur_time):
-		if self.asks.best_price is None or self.bids.best_price is None:
+		if self.asks.best_quantity is None or self.bids.best_quantity is None:
 			return None
 		best_ask_price = self.asks.best_price
 		best_ask_trader_id = self.asks.best_trader_id
@@ -195,12 +195,15 @@ class Exchange(OrderBook):
 		"""
 		Currently tape_dump only writes a list of transactions (ignores cancellations)
 		"""
-		dumpfile = open(file_name, file_mode)
+		dump_file = open(file_name, file_mode)
 		for tape_item in self.tape:
-			if tape_item['type'] == 'Trade':
-				dumpfile.write('Trd, %010.3f, %s\n' % (tape_item['time'], tape_item['price']))
-		dumpfile.close()
-		if tape_mode == 'wipe':
+			dump_file.write(str(tape_item) + "\n")
+			# if tape_item["type"] == "Trade":
+			# 	dump_file.write("Trd, %010.3f, %s\n" % (tape_item["time"], tape_item["price"]))
+			# elif tape_item["type"] == "Cancel":
+			# 	pass
+		dump_file.close()
+		if tape_mode == "wipe":
 			self.tape = []
 
 	def publish_lob(self, cur_time, verbose):

@@ -6,6 +6,7 @@ from mean_reversion_trader import MeanReversionTrader
 from noise_trader import NoiseTrader
 import util
 from pprint import pprint
+import matplotlib.pyplot as plt
 
 
 def main():
@@ -40,15 +41,16 @@ def main():
 	# approximately the number of 10ths of a second in an 8.5h trading day
 	"""
 	cur_time = 0
-	total_time = 300000
+	# total_time = 300000
+	total_time = 300
 	while cur_time < total_time:
 		print("\ntime: {}".format(cur_time))
 
 		# market maker
-		print("market maker")
+		# print("market maker")
 		ask_order, bid_order = market_maker.work(exchange, cur_time)
-		print(ask_order)
-		print(bid_order)
+		# print(ask_order)
+		# print(bid_order)
 		if ask_order is not None:
 			# cancel any existing orders from market maker
 			exchange.del_trader_all_orders(market_maker.trader_id, cur_time)
@@ -60,43 +62,47 @@ def main():
 			util.process_trades(trades, traders, bid_order, cur_time)
 
 		# liquidity consumer
-		print("liquidity consumer")
+		# print("liquidity consumer")
 		if cur_time == 0:
 			# initialize internal parameters at start of day
 			liquidity_consumer.make_decision()
 		order = liquidity_consumer.work(exchange, cur_time)
-		print(order)
+		# print(order)
 		if order is not None:
 			trades = exchange.process_order(cur_time, order, False)
 			util.process_trades(trades, traders, order, cur_time)
 
 		# momentum trader
-		print("momentum trader")
+		# print("momentum trader")
 		order = momentum_trader.work(exchange, cur_time)
-		print(order)
+		# print(order)
 		if order is not None:
 			trades = exchange.process_order(cur_time, order, False)
 			util.process_trades(trades, traders, order, cur_time)
 
 		# mean reversion trader
-		print("mean reversion trader")
+		# print("mean reversion trader")
 		order = mean_reversion_trader.work(exchange, cur_time)
-		print(order)
+		# print(order)
 		if order is not None:
 			trades = exchange.process_order(cur_time, order, False)
 			util.process_trades(trades, traders, order, cur_time)
 
 		# noise trader
-		print("noise trader")
+		# print("noise trader")
 		order = noise_trader.work(exchange, cur_time)
-		print(order)
+		# print(order)
 		if order is not None:
 			trades = exchange.process_order(cur_time, order, False)
 			util.process_trades(trades, traders, order, cur_time)
 		logger.debug(exchange.price)
 		cur_time += 1
 	pprint(exchange.tape)
+	exchange.tape_dump("transaction_records.csv", "w", "keep")
 
+
+# plt.plot(exchange.all_deal_prices)
+# plt.show()
 
 if __name__ == "__main__":
 	main()

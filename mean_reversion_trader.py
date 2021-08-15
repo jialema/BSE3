@@ -22,11 +22,11 @@ class MeanReversionTrader(Trader):
 			self.compute_ema(exchange)
 			# sell high
 			if exchange.price - self.ema_t >= self.k * self.sigma_t:
-				ask_price = exchange.asks.best_price + exchange.tick_size
+				ask_price = exchange.asks.best_price - exchange.tick_size
 				order = self.sell(ask_price, self.v_mr, cur_time)
 			elif self.ema_t - exchange.price >= self.k * self.sigma_t:
 				# buy low
-				bid_price = exchange.bids.best_price - exchange.tick_size
+				bid_price = exchange.bids.best_price + exchange.tick_size
 				order = self.buy(bid_price, self.v_mr, cur_time)
 		return order
 

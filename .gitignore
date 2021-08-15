@@ -133,3 +133,5 @@ BSE.py
 test.py
 *.csv
 .idea
+logs
+price_trend_figures
