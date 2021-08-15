@@ -14,12 +14,14 @@ class Trader:
 	def buy(self, bid_price, quantity, cur_time):
 		if bid_price is None or quantity is None:
 			return None
+		bid_price = round(bid_price, 2)
 		order = Order(trader_id=self.trader_id, order_type="Bid", price=bid_price, quantity=quantity, time=cur_time)
 		return order
 
 	def sell(self, ask_price, quantity, cur_time):
 		if ask_price is None or quantity is None:
 			return None
+		ask_price = round(ask_price, 2)
 		order = Order(trader_id=self.trader_id, order_type="Ask", price=ask_price, quantity=quantity, time=cur_time)
 		return order
 

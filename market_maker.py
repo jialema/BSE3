@@ -30,18 +30,12 @@ class MarketMaker(Trader):
 		The market maker is to provide market liquidity.
 		"""
 
-		if exchange.bids.best_price is not None or exchange.asks.best_price is not None:
-			if exchange.bids.best_price is None:
-				best_bid_price = exchange.price
-				best_ask_price = exchange.asks.best_price
-			elif exchange.asks.best_price is None:
-				best_bid_price = exchange.bids.best_price
-				best_ask_price = exchange.price
-			else:
-				best_bid_price = exchange.bids.best_price
-				best_ask_price = exchange.asks.best_price
-		else:
-			return ask_order, bid_order
+		best_bid_price = exchange.bids.best_price
+		best_ask_price = exchange.asks.best_price
+		if best_bid_price is None:
+			best_bid_price = exchange.price
+		if best_ask_price is None:
+			best_ask_price = exchange.price
 
 		exchange_all_deal_prices = exchange.all_deal_prices[:]
 		# if the number of the dealt prices is not enough, the rolling-mean cannot be performed.

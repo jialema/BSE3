@@ -2,6 +2,7 @@ import sys
 from order import Order
 from order_book import OrderBook
 import time
+import copy
 
 
 class Exchange(OrderBook):
@@ -15,6 +16,7 @@ class Exchange(OrderBook):
 		self.spread = init_spread
 		# minimum size of price change
 		self.tick_size = tick_size
+		self.all_orders_for_record = []
 
 	def add_order(self, order):
 		"""
@@ -105,6 +107,7 @@ class Exchange(OrderBook):
 	def process_order(self, cur_time, order, verbose):
 		[quote_id, response] = self.add_order(order)
 		order.quote_id = quote_id
+		self.all_orders_for_record.append(copy.deepcopy(order))
 		trades = []
 		while True:
 			trade = self.make_match(order, cur_time)
@@ -113,98 +116,6 @@ class Exchange(OrderBook):
 			else:
 				break
 		return trades
-
-	def process_order1(self, cur_time, order, verbose):
-		"""
-		receive an order and either add it to the relevant LOB (ie treat as limit order)
-		or if it crosses the best counterparty offer, execute it (treat as a market order)
-		NB this function can only process the order with quantity one.
-		"""
-		order_price = order.price
-		counterparty = None
-		# add it to the order lists and overwrite any previous order
-		[quote_id, response] = self.add_order(order)
-		order.quote_id = quote_id
-		if verbose:
-			print('QUID: order.quid=%d' % order.quote_id)
-			print('RESPONSE: %s' % response)
-		if self.asks.best_price is None or self.bids.best_price is None:
-			return None
-		best_ask = self.asks.best_price
-		best_ask_trader_id = self.asks.best_trader_id
-		best_bid = self.bids.best_price
-		best_bid_trader_id = self.bids.best_trader_id
-		if order.order_type == 'Bid':
-			if self.asks.number_traders > 0 and best_bid >= best_ask:
-				# bid lifts the best ask
-				if verbose:
-					print("Bid $%s lifts best ask" % order_price)
-				counterparty = best_ask_trader_id
-				# bid crossed ask, so use ask price
-				price = best_ask
-				if verbose:
-					print('counterparty, price', counterparty, price)
-				# delete the ask just crossed
-				self.asks.delete_best()
-				# delete the bid that was the latest order
-				self.bids.delete_best()
-		elif order.order_type == 'Ask':
-			if self.bids.number_traders > 0 and best_ask <= best_bid:
-				# ask hits the best bid
-				if verbose:
-					print("Ask $%s hits best bid" % order_price)
-				# remove the best bid
-				counterparty = best_bid_trader_id
-				# ask crossed bid, so use bid price
-				price = best_bid
-				if verbose:
-					print('counterparty, price', counterparty, price)
-				# delete the bid just crossed, from the exchange's records
-				self.bids.delete_best()
-				# delete the ask that was the latest order, from the exchange's records
-				self.asks.delete_best()
-		else:
-			# we should never get here
-			sys.exit('process_order() given neither Bid nor Ask')
-		"""
-		NB at this point we have deleted the order from the exchange's records
-		but the two traders concerned still have to be notified
-		"""
-		if verbose:
-			print('counterparty %s' % counterparty)
-		if counterparty is not None:
-			# process the trade
-			if verbose:
-				print('>>>>>>>>>>>>>>>>>TRADE t=%010.3f $%d %s %s' % (cur_time, price, counterparty, order.trader_id))
-			transaction_record = {
-				'type': 'Trade',
-				'time': cur_time,
-				'price': price,
-				'party1': counterparty,
-				'party2': order.trader_id,
-				'quantity': order.quantity
-			}
-			self.tape.append(transaction_record)
-			self.all_deal_prices.append(price)
-			self.price = price
-			return transaction_record
-		else:
-			return None
-
-	def tape_dump(self, file_name, file_mode, tape_mode):
-		"""
-		Currently tape_dump only writes a list of transactions (ignores cancellations)
-		"""
-		dump_file = open(file_name, file_mode)
-		for tape_item in self.tape:
-			dump_file.write(str(tape_item) + "\n")
-			# if tape_item["type"] == "Trade":
-			# 	dump_file.write("Trd, %010.3f, %s\n" % (tape_item["time"], tape_item["price"]))
-			# elif tape_item["type"] == "Cancel":
-			# 	pass
-		dump_file.close()
-		if tape_mode == "wipe":
-			self.tape = []
 
 	def publish_lob(self, cur_time, verbose):
 		"""
@@ -232,6 +143,44 @@ class Exchange(OrderBook):
 			print('ASK_lob=%s' % public_data['asks']['lob'])
 
 		return public_data
+
+	def tape_dump(self, file_name, file_mode, tape_mode):
+		"""
+		Currently tape_dump only writes a list of transactions
+		"""
+		dump_file = open(file_name, file_mode)
+		for tape_item in self.tape:
+			if tape_item["type"] == "Trade":
+				dump_file.write("type: {}, time: {}, bid: {}, ask: {}, price: {}, quantity: {}\n".format(
+					tape_item["type"],
+					tape_item["time"],
+					tape_item["bid"],
+					tape_item["ask"],
+					tape_item["price"],
+					tape_item["quantity"]
+				))
+			elif tape_item["type"] == "Cancel":
+				dump_file.write("type: {}, time: {}, trader_id: {}\n".format(
+					tape_item["type"],
+					tape_item["time"],
+					tape_item["trader_id"]
+				))
+		dump_file.close()
+		if tape_mode == "wipe":
+			self.tape = []
+
+	def orders_dump(self, file_name, file_mode):
+		dump_file = open(file_name, file_mode)
+		for order in self.all_orders_for_record:
+			dump_file.write("time: {}, order_type: {}, trade_id: {}, price: {}, quantity: {}, quote_id: {}\n".format(
+				order.time,
+				order.order_type,
+				order.trader_id,
+				order.price,
+				order.quantity,
+				order.quote_id
+			))
+		dump_file.close()
 
 	def __str__(self):
 		return "exchange"
