@@ -17,6 +17,7 @@ class Exchange(OrderBook):
 		# minimum size of price change
 		self.tick_size = tick_size
 		self.all_orders_for_record = []
+		self.exception_transaction = []
 
 	def add_order(self, order):
 		"""
@@ -38,27 +39,44 @@ class Exchange(OrderBook):
 			self.asks.best_trader_id = self.asks.lob[best_price][1][0][2]
 		return [order.quote_id, response]
 
-	def del_trader_all_orders(self, trader_id, cur_time):
+	def del_trader_all_orders(self, trader_id, order_types, cur_time):
 		"""
 		delete any existing orders from a certain trader
-		@param trader_id: ID of a certain trader, like market maker
-		@param cur_time: current time
+		:param trader_id: ID of a certain trader, like market maker
+		:param cur_time: current time
+		:param order_types:
 		"""
-		if trader_id in self.bids.orders:
+		if "Bid" in order_types and trader_id in self.bids.orders:
 			self.bids.book_del(trader_id)
 			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
 			self.tape.append(cancel_record)
-		if trader_id in self.asks.orders:
+		if "Ask" in order_types and trader_id in self.asks.orders:
 			self.asks.book_del(trader_id)
+			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
+			self.tape.append(cancel_record)
+
+	def del_oldest_order(self, trader_id, order_type, cur_time):
+		"""
+		delete any existing orders from a certain trader
+		:param trader_id: ID of a certain trader, like market maker
+		:param cur_time: current time
+		:param order_type:
+		"""
+		if order_type == "Bid" and trader_id in self.bids.orders:
+			self.bids.oldest_order_del(trader_id)
+			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
+			self.tape.append(cancel_record)
+		if order_type == "Ask" and trader_id in self.asks.orders:
+			self.asks.oldest_order_del(trader_id)
 			cancel_record = {'type': 'Cancel', 'time': cur_time, 'trader_id': trader_id}
 			self.tape.append(cancel_record)
 
 	def del_order(self, order_time, order):
 		"""
 		delete a trader's quot/order from the exchange, update all internal records
-		@param order_time:
-		@param order:
-		@return:
+		:param order_time:
+		:param order:
+		:return:
 		"""
 		if order.order_type == 'Bid':
 			self.bids.book_del(order.train_id)
@@ -70,7 +88,7 @@ class Exchange(OrderBook):
 			self.tape.append(cancel_record)
 		else:
 			# neither bid nor ask?
-			sys.exit('bad order type in del_quote()')
+			sys.exit("[Error]bad order_type value")
 
 	def make_match(self, order, cur_time):
 		if self.asks.best_quantity is None or self.bids.best_quantity is None:
@@ -96,10 +114,15 @@ class Exchange(OrderBook):
 				'bid': best_bid_trader_id,
 				'quantity': quantity
 			}
-			self.asks.delete_best(quantity)
-			self.bids.delete_best(quantity)
+			ask_order_time = self.asks.delete_best(quantity)
+			bid_order_time = self.bids.delete_best(quantity)
 			self.tape.append(transaction_record)
 			self.all_deal_prices.append(price)
+			if abs(price - self.price) > 0.2:
+				exception_transaction = copy.deepcopy(transaction_record)
+				exception_transaction["ask_order_time"] = ask_order_time
+				exception_transaction["bid_order_time"] = bid_order_time
+				self.exception_transaction.append(exception_transaction)
 			self.price = price
 			return transaction_record
 		return None
@@ -168,6 +191,33 @@ class Exchange(OrderBook):
 		dump_file.close()
 		if tape_mode == "wipe":
 			self.tape = []
+
+	def exception_transaction_dump(self, file_name, file_mode):
+		"""
+		Currently tape_dump only writes a list of transactions
+		"""
+		dump_file = open(file_name, file_mode)
+		for tape_item in self.exception_transaction:
+			if tape_item["type"] == "Trade":
+				dump_file.write(
+					"type: {}, "
+					"time: {}, "
+					"bid: {}, "
+					"bid_time: {}, "
+					"ask: {}, "
+					"ask_time: {}, "
+					"price: {}, "
+					"quantity: {}\n".format(
+						tape_item["type"],
+						tape_item["time"],
+						tape_item["bid"],
+						tape_item["bid_order_time"],
+						tape_item["ask"],
+						tape_item["ask_order_time"],
+						tape_item["price"],
+						tape_item["quantity"]
+					))
+		dump_file.close()
 
 	def orders_dump(self, file_name, file_mode):
 		dump_file = open(file_name, file_mode)

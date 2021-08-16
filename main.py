@@ -47,7 +47,7 @@ def main():
 	# total_time = 300000
 	total_time = 200000
 	while cur_time < total_time:
-		if cur_time % 10000 == 0:
+		if cur_time % 1000 == 0:
 			print("\ntime: {}".format(cur_time))
 
 		# market maker
@@ -55,9 +55,10 @@ def main():
 		ask_order, bid_order = market_maker.work(exchange, cur_time)
 		# print(ask_order)
 		# print(bid_order)
+		# ask_order = None
 		if ask_order is not None:
 			# cancel any existing orders from market maker
-			exchange.del_trader_all_orders(market_maker.trader_id, cur_time)
+			exchange.del_trader_all_orders(market_maker.trader_id, ["Bid", "Ask"], cur_time)
 			# sent ask order to exchange
 			trades = exchange.process_order(cur_time, ask_order, False)
 			util.process_trades(trades, traders, ask_order, cur_time)
@@ -104,11 +105,12 @@ def main():
 	# pprint(exchange.tape)
 
 	exchange.tape_dump(os.path.join(data_dir, "transaction_records.csv"), "w", "keep")
+	exchange.exception_transaction_dump(os.path.join(data_dir, "exception_records.csv"), "w")
 	exchange.orders_dump(os.path.join(data_dir, "orders.csv"), "w")
 
-	# util.plot_price_trend(exchange, 500)
+	util.plot_price_trend(exchange)
 	# prices = util.sample_data(exchange.all_deal_prices, 50)
-	plt.plot(exchange.all_deal_prices)
+	# plt.plot(exchange.all_deal_prices)
 	plt.show()
 
 

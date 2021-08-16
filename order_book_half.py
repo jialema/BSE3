@@ -109,6 +109,14 @@ class OrderBookHalf:
 			self.number_traders = len(self.orders)
 			self.build_lob()
 
+	def oldest_order_del(self, trader_id):
+		if self.orders.get(trader_id) is not None:
+			if len(self.orders[trader_id]) == 1:
+				del (self.orders[trader_id])
+			else:
+				del (self.orders[trader_id][0])
+			self.build_lob()
+
 	def delete_best(self, quantity):
 		"""
 		delete order: when the best bid/ask has been hit, delete it from the book
@@ -119,9 +127,14 @@ class OrderBookHalf:
 		best_price_trader_id = best_price_orders[1][0][2]
 		best_price_order_time = best_price_orders[1][0][0]
 		for order in self.orders[best_price_trader_id]:
+			# find the order to be deleted according to the time
 			if order.time == best_price_order_time:
 				order.quantity -= quantity
-			if order.quantity == 0:
-				self.orders[best_price_trader_id].remove(order)
+				if order.quantity == 0:
+					if len(self.orders[best_price_trader_id]) == 1:
+						del self.orders[best_price_trader_id]
+					else:
+						self.orders[best_price_trader_id].remove(order)
 		self.build_lob()
+		return best_price_order_time
 

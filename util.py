@@ -43,19 +43,30 @@ def sample_data(data, number):
 	return sampled_data
 
 
-def plot_price_trend(exchange, number):
+def plot_price_trend(exchange):
+	times = []
 	prices = []
-	temp = []
-	inx = 1
+	price = 0
+	quantity = 0
+	last_time = -1
 	for tape_item in exchange.tape:
 		if tape_item["type"] == "Trade":
-			if tape_item["time"] < inx * number:
-				temp.append(tape_item["price"])
+			cur_time = tape_item["time"]
+			if cur_time == last_time:
+				price += tape_item["price"] * tape_item["quantity"]
+				quantity += tape_item["quantity"]
 			else:
-				prices.append(sum(temp)/len(temp))
-				temp = [tape_item["price"]]
-				inx += 1
-	plt.plot(prices)
+				if quantity != 0:
+					times.append(cur_time)
+					prices.append(round(price / quantity, 2))
+				price = tape_item["price"] * tape_item["quantity"]
+				quantity = tape_item["quantity"]
+
+			last_time = cur_time
+
+	plt.plot(sample_data(prices, 50))
+	plt.show()
+	plt.plot(times, prices)
 	plt.show()
 
 

@@ -74,7 +74,12 @@ class NoiseTrader(Trader):
 					order = self.submit_order(buy_or_sell, v_t, price_off_spr, "off-spread limit order", exchange, cur_time)
 			else:
 				# cancel limit order
-				exchange.del_trader_all_orders(self.trader_id, cur_time)
+				if buy_or_sell == "buy":
+					order_type = "Bid"
+				elif buy_or_sell == "sell":
+					order_type = "Ask"
+				# exchange.del_oldest_order(self.trader_id, order_type, cur_time)
+				exchange.del_trader_all_orders(self.trader_id, [order_type], cur_time)
 		return order
 
 	def submit_order(self, buy_or_sell=None, v_t=None, price=None, action_type="", exchange=None, cur_time=None):
