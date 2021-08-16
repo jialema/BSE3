@@ -12,7 +12,7 @@ class MeanReversionTrader(Trader):
 		self.alpha = 0.94
 		self.ema_t = 0
 		# this is an empirical value, given by author
-		self.k = 0.01
+		self.k = 1
 		self.sigma_t = None
 		self.all_ema = []
 
@@ -24,7 +24,8 @@ class MeanReversionTrader(Trader):
 			best_bid_price = exchange.price
 		if best_ask_price is None:
 			best_ask_price = exchange.price
-		# print(len(self.all_ema), len(exchange.all_deal_prices))
+		if len(exchange.all_deal_prices) == 0:
+			return None
 		if random.random() < self.delta_mr:
 			self.compute_ema(exchange)
 			# sell high
@@ -44,6 +45,8 @@ class MeanReversionTrader(Trader):
 		@param exchange: exchange
 		@return: None
 		"""
+		if (len(exchange.all_deal_prices) - len(self.all_ema)) / len(exchange.all_deal_prices) < 0.1:
+			return
 		length_to_be_processed = len(exchange.all_deal_prices) - len(self.all_ema)
 		for price_t in exchange.all_deal_prices[-length_to_be_processed:]:
 			self.ema_t = self.ema_t + self.alpha * (price_t - self.ema_t)

@@ -44,8 +44,8 @@ def main():
 	# approximately the number of 10ths of a second in an 8.5h trading day
 	"""
 	cur_time = 0
-	total_time = 300000
-	# total_time = 100000
+	# total_time = 300000
+	total_time = 200000
 	while cur_time < total_time:
 		if cur_time % 10000 == 0:
 			print("\ntime: {}".format(cur_time))
@@ -106,6 +106,8 @@ def main():
 	exchange.tape_dump(os.path.join(data_dir, "transaction_records.csv"), "w", "keep")
 	exchange.orders_dump(os.path.join(data_dir, "orders.csv"), "w")
 
+	# util.plot_price_trend(exchange, 500)
+	# prices = util.sample_data(exchange.all_deal_prices, 50)
 	plt.plot(exchange.all_deal_prices)
 	plt.show()
 

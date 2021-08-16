@@ -1,6 +1,9 @@
 import sys
 import logging
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 def create_log(file_name):
 	logger = logging.getLogger("logger")
@@ -27,6 +30,33 @@ def process_trades(trades, traders, order, cur_time):
 			# trade occurred so the counterparties update order lists and blotters
 			traders[trade["ask"]].book_keep(trade, order, cur_time)
 			traders[trade["bid"]].book_keep(trade, order, cur_time)
+
+
+def sample_data(data, number):
+	sampled_data = []
+	temp = []
+	for i in range(len(data)):
+		temp.append(data[i])
+		if i % number == 0:
+			sampled_data.append(sum(temp) / len(temp))
+			temp = []
+	return sampled_data
+
+
+def plot_price_trend(exchange, number):
+	prices = []
+	temp = []
+	inx = 1
+	for tape_item in exchange.tape:
+		if tape_item["type"] == "Trade":
+			if tape_item["time"] < inx * number:
+				temp.append(tape_item["price"])
+			else:
+				prices.append(sum(temp)/len(temp))
+				temp = [tape_item["price"]]
+				inx += 1
+	plt.plot(prices)
+	plt.show()
 
 
 def get_code_position():
