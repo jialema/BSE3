@@ -12,6 +12,7 @@ class Exchange(OrderBook):
 		# newest deal price
 		self.price = init_price
 		self.all_deal_prices = []
+		self.trade_prices_with_time = []
 		# price spread
 		self.spread = init_spread
 		# minimum size of price change
@@ -122,6 +123,9 @@ class Exchange(OrderBook):
 			bid_order_time = self.bids.delete_best(quantity)
 			self.tape.append(transaction_record)
 			self.all_deal_prices.append(price)
+			self.trade_prices_with_time.append({
+				"time": cur_time,
+				"price": price})
 			if abs(price - self.price) > 0.2:
 				exception_transaction = copy.deepcopy(transaction_record)
 				exception_transaction["ask_order_time"] = ask_order_time

@@ -1,3 +1,4 @@
+import copy
 import math
 from functools import reduce
 import numpy as np
@@ -5,6 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import kurtosis
 import statsmodels.tsa.api as smt
+import sys
 
 
 def auto_correlation(x, lags):
@@ -170,45 +172,109 @@ def fat_tailed_distribution(exchange):
 	plt.show()
 
 
-def return_auto_correlation_statistics(exchange):
-	mid_quotes = exchange.mid_quotes
+def return_auto_correlation(exchange):
+	# remove duplicates
+	mid_quotes_re = []
+	for i in range(len(exchange.mid_quotes)):
+		if mid_quotes_re and mid_quotes_re[-1]["time"] == exchange.mid_quotes[i]["time"]:
+			mid_quotes_re[-1]["mid_quote"] = (mid_quotes_re[-1]["mid_quote"] + exchange.mid_quotes[i]["mid_quote"]) / 2
+			mid_quotes_re[-1]["quantity"] = mid_quotes_re[-1]["quantity"] + exchange.mid_quotes[i]["quantity"]
+		else:
+			mid_quotes_re.append(copy.deepcopy(exchange.mid_quotes[i]))
+
+	# fill the blank time
+	mid_quotes = []
+	i = 0
+	j = 0
+	last_mid_quote = 100
+	while i < 200000 or j < len(mid_quotes_re):
+		if j == len(mid_quotes_re) or i < mid_quotes_re[j]["time"]:
+			# mid_quotes.append([i, last_mid_quote])
+			mid_quotes.append([i, 0])
+			i += 1
+		elif i == mid_quotes_re[j]["time"]:
+			mid_quotes.append([i, mid_quotes_re[j]["mid_quote"]])
+			last_mid_quote = mid_quotes_re[j]["mid_quote"]
+			i += 1
+			j += 1
+		else:
+			sys.exit("[Error] bad i or j value")
+
+	# show the trend
+	# mid_prices = [e[1] for e in mid_quotes]
+	# plt.plot(mid_prices)
+	# mid_prices_mean = pd.DataFrame.ewm(pd.Series(mid_prices), span=1000).mean()
+	# plt.plot(mid_prices_mean)
+	# plt.title("Mid-quote trend")
+	# plt.show()
+
+	# compute the return auto correlation
 	time_scales = list(range(500, 5000, 500))
 	acf_multi_scales = []
 	for time_scale in time_scales:
 		mid_quote_returns = []
 		for i in range(len(mid_quotes) - time_scale):
-			mid_quote_return = math.log10(mid_quotes[i + time_scale]["mid_quote"] / mid_quotes[i]["mid_quote"])
+			try:
+				mid_quote_return = math.log(mid_quotes[i + time_scale][1]) - math.log(mid_quotes[i][1])
+			except ValueError:
+				mid_quote_return = 0
 			mid_quote_returns.append(mid_quote_return)
-
+		# plt.plot(mid_quote_returns)
+		# plt.title("mid-quote return on {}".format(time_scale))
+		# plt.show()
+		# rolling_mean = pd.DataFrame.ewm(pd.Series(mid_quote_returns), span=3000).mean()
 		acf = auto_correlation(mid_quote_returns, 1)
 		acf_multi_scales.append(acf[0])
-	mid_prices = [e["mid_quote"] for e in mid_quotes]
-	plt.plot(mid_prices)
-	mid_prices_mean = pd.DataFrame.ewm(pd.Series(mid_prices), span=1000).mean()
-	plt.plot(mid_prices_mean)
-	plt.title("mid-price")
-	plt.show()
+
+		# plt.plot(mid_quote_returns)
+		# plt.title("mid-quote return on timescale {}".format(time_scale))
+		# plt.show()
+
 	print("acf on different scales: {}".format(acf_multi_scales))
 
-	# trade_prices = exchange.all_deal_prices
-	# time_scales = list(range(500, 1000, 500))
-	# acf_multi_scales = []
-	# for time_scale in time_scales:
-	# 	trade_price_returns = []
-	# 	for i in range(len(trade_prices) - time_scale):
-	# 		trade_price_return = math.log10(trade_prices[i + time_scale] / trade_prices[i])
-	# 		trade_price_returns.append(trade_price_return)
-	# 	roll_weighted_mean = pd.DataFrame.ewm(pd.Series(trade_price_returns), span=100).mean()
-	# 	# df = pd.DataFrame(trade_price_returns)
-	# 	# acf = smt.stattools.acf(df, nlags=1)
-	# 	acf = auto_correlation(trade_price_returns, 10)
-	# 	acf_mean = auto_correlation(trade_price_returns, 10)
-	# 	print(acf_mean)
-	# 	acf_multi_scales.append(acf[0])
 	#
-	# 	plt.plot(trade_price_returns, label="time_scales:{}".format(time_scale))
-	# 	plt.plot(roll_weighted_mean, label="time_scales:{}".format(time_scale))
-	# plt.title("acf_trade_price_returns")
-	# plt.show()
-	# print("acf on different scales: {}".format(acf_multi_scales))
+	trade_prices_re = []
+	for i in range(len(exchange.tape)):
+		trade = exchange.tape[i]
+		if trade["type"] == "Trade":
+			if trade_prices_re and trade_prices_re[-1]["time"] == trade["time"]:
+				trade_prices_re[-1]["price"] = (trade_prices_re[-1]["price"] * trade_prices_re[-1]["quantity"] + trade["price"] * trade["quantity"]) / (trade_prices_re[-1]["quantity"] + trade["quantity"])
+				trade_prices_re[-1]["quantity"] = trade_prices_re[-1]["quantity"] + trade["quantity"]
+			else:
+				trade_prices_re.append({
+					"time": trade["time"],
+					"price": trade["price"],
+					"quantity": trade["quantity"]
+				})
 
+	# fill the blank time
+	trade_prices = []
+	i = 0
+	j = 0
+	last_trade_price = 100
+	while i < 200000 or j < len(trade_prices_re):
+		if j == len(trade_prices_re) or i < trade_prices_re[j]["time"]:
+			# trade_prices.append([i, last_trade_price])
+			trade_prices.append([i, (last_trade_price * 1.75 + 100)/2.75])
+			i += 1
+		elif i == trade_prices_re[j]["time"]:
+			trade_prices.append([i, trade_prices_re[j]["price"]])
+			last_trade_price = trade_prices_re[j]["price"]
+			i += 1
+			j += 1
+		else:
+			sys.exit("[Error] bad i or j value")
+
+	acf_multi_scales = []
+	for time_scale in time_scales:
+		trade_price_returns = []
+		for i in range(len(trade_prices) - time_scale):
+			try:
+				trade_price_return = math.log(trade_prices[i + time_scale][1]) - math.log(trade_prices[i][1])
+			except ValueError:
+				trade_price_return = 0
+			trade_price_returns.append(trade_price_return)
+		acf = auto_correlation(trade_price_returns, 1)
+		acf_multi_scales.append(acf[0])
+
+	print("acf on different scales: {}".format(acf_multi_scales))

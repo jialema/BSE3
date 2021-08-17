@@ -55,37 +55,13 @@ def sample_data(data, times, number):
 
 
 def plot_price_trend(exchange):
-	price_rolling_mean = pd.DataFrame.ewm(pd.Series(exchange.all_deal_prices), span=100).mean()
-	plt.plot(exchange.all_deal_prices)
-	plt.plot(price_rolling_mean)
+	print("all trade prices: {}".format(len(exchange.all_deal_prices)))
+	trade_price_rolling_mean = pd.DataFrame.ewm(pd.Series(exchange.all_deal_prices), span=100).mean()
+	# plt.plot(exchange.all_deal_prices)
+	plt.plot(trade_price_rolling_mean)
 	plt.title("trade price trend")
 	plt.show()
-	# times = []
-	# prices = []
-	# price = 0
-	# quantity = 0
-	# last_time = -1
-	# for tape_item in exchange.tape:
-	# 	if tape_item["type"] == "Trade":
-	# 		cur_time = tape_item["time"]
-	# 		if cur_time == last_time:
-	# 			price += tape_item["price"] * tape_item["quantity"]
-	# 			quantity += tape_item["quantity"]
-	# 		else:
-	# 			if quantity != 0:
-	# 				times.append(cur_time)
-	# 				prices.append(round(price / quantity, 2))
-	# 			price = tape_item["price"] * tape_item["quantity"]
-	# 			quantity = tape_item["quantity"]
-	#
-	# 		last_time = cur_time
-	#
-	# sampled_data = sample_data(prices, times, 800)
-	# plt.plot(sampled_data)
-	# plt.show()
-	# plt.plot(times, prices)
-	# plt.show()
-	# return sampled_data
+	exchange.trade_price_rolling_mean = trade_price_rolling_mean
 
 
 def get_code_position():

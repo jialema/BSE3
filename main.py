@@ -106,15 +106,14 @@ def main():
 	# print(statistics.auto_correlation(exchange.orders_signs, 1)[0])
 	# print(statistics.hurst(exchange.orders_signs))
 	# print(statistics.find_price_spike(exchange.all_deal_prices))
-	#
-	sampled_data = util.plot_price_trend(exchange)
-	# print(statistics.find_price_spike(sampled_data))
-	# # plt.plot(exchange.all_deal_prices)
-	# # plt.show()
+
+	util.plot_price_trend(exchange)
+	# print(statistics.find_price_spike(exchange.trade_price_rolling_mean))
+
 	# statistics.concave_price_impact(exchange)
 	# statistics.volatility_clustering(exchange)
 	# statistics.fat_tailed_distribution(exchange)
-	statistics.return_auto_correlation_statistics(exchange)
+	statistics.return_auto_correlation(exchange)
 
 
 if __name__ == "__main__":
