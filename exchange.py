@@ -18,21 +18,25 @@ class Exchange(OrderBook):
 		self.tick_size = tick_size
 		self.all_orders_for_record = []
 		self.exception_transaction = []
+		self.orders_signs = []
+		self.mid_quotes = []
 
 	def add_order(self, order):
 		"""
 		add a quote/order to the exchange and update all internal records; return unique i.d.
-		@param order: order, the instance of the class Order
-		@return:
+		:param order: order, the instance of the class Order
+		:return
 		"""
 		order.quote_id = self.quote_id
 		self.quote_id += 1
 		if order.order_type == 'Bid':
+			self.orders_signs.append(1)
 			response = self.bids.book_add(order)
 			best_price = self.bids.lob_anon[-1][0]
 			self.bids.best_price = best_price
 			self.bids.best_trader_id = self.bids.lob[best_price][1][0][2]
 		else:
+			self.orders_signs.append(-1)
 			response = self.asks.book_add(order)
 			best_price = self.asks.lob_anon[0][0]
 			self.asks.best_price = best_price
@@ -88,7 +92,7 @@ class Exchange(OrderBook):
 			self.tape.append(cancel_record)
 		else:
 			# neither bid nor ask?
-			sys.exit("[Error]bad order_type value")
+			sys.exit("[Error] bad order_type value")
 
 	def make_match(self, order, cur_time):
 		if self.asks.best_quantity is None or self.bids.best_quantity is None:
@@ -138,6 +142,12 @@ class Exchange(OrderBook):
 				trades.append(trade)
 			else:
 				break
+		if self.bids.best_price is not None and self.asks.best_price is not None:
+			mid_quote = round((self.asks.best_price + self.bids.best_price) / 2, 2)
+			self.mid_quotes.append({
+				"time": cur_time,
+				"mid_quote": mid_quote,
+				"quantity": order.quantity})
 		return trades
 
 	def publish_lob(self, cur_time, verbose):

@@ -9,7 +9,7 @@ class MomentumTrader(Trader):
 		self.delta_mt = 0.40
 		self.n_r = 6
 		self.k = 0.001
-		self.wealth = 1000000
+		self.wealth = 100000
 
 	def work(self, exchange, cur_time):
 		order = None

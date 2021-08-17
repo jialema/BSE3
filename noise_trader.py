@@ -22,8 +22,8 @@ class NoiseTrader(Trader):
 		# limit order size
 		self.mu_lo = 8
 		self.sigma_lo = 0.7
-		# off-spread relative price, 0.05 or 0.005
-		self.x_min_off_spr = 0.005
+		# off-spread relative price, 0.05, 0.03 with min(..., 0.2)
+		self.x_min_off_spr = 0.03
 		self.beta_off_spr = 2.72
 		# crossing limit order
 		self.alpha_crs = 0.003
@@ -32,12 +32,12 @@ class NoiseTrader(Trader):
 		# spread limit order
 		self.alpha_spr = 0.173
 		# off-spread limit order
-		self.alpha_off_spr = 0.726
+		self.alpha_off_spr = 0.426
 
 	def work(self, exchange, cur_time):
 		order = None
 		if random.random() < self.delta_nt:
-			if random.random() < self.buy_or_sell_prob:
+			if random.random() <= self.buy_or_sell_prob:
 				buy_or_sell = "buy"
 			else:
 				buy_or_sell = "sell"
@@ -70,13 +70,14 @@ class NoiseTrader(Trader):
 					order = self.submit_order(buy_or_sell, v_t, None, "spread limit order", exchange, cur_time)
 				else:
 					# off-spread limit order
-					price_off_spr = self.x_min_off_spr * (1 - random.random()) ** (-1 / (self.beta_off_spr - 1))
+					price_off_spr = self.x_min_off_spr * (1 - random.uniform(0, 1)) ** (-1 / (self.beta_off_spr - 1))
+					price_off_spr = min(price_off_spr, 0.2)
 					order = self.submit_order(buy_or_sell, v_t, price_off_spr, "off-spread limit order", exchange, cur_time)
 			else:
 				# cancel limit order
 				if buy_or_sell == "buy":
 					order_type = "Bid"
-				elif buy_or_sell == "sell":
+				else:
 					order_type = "Ask"
 				# exchange.del_oldest_order(self.trader_id, order_type, cur_time)
 				exchange.del_trader_all_orders(self.trader_id, [order_type], cur_time)

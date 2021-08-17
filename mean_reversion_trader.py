@@ -12,7 +12,7 @@ class MeanReversionTrader(Trader):
 		self.alpha = 0.94
 		self.ema_t = 0
 		# this is an empirical value, given by author
-		self.k = 2
+		self.k = 1
 		self.sigma_t = None
 		self.all_ema = []
 

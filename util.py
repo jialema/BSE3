@@ -1,8 +1,9 @@
 import sys
 import logging
-
+import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 
 
 def create_log(file_name):
@@ -32,42 +33,59 @@ def process_trades(trades, traders, order, cur_time):
 			traders[trade["bid"]].book_keep(trade, order, cur_time)
 
 
-def sample_data(data, number):
+def sample_data(data, times, number):
 	sampled_data = []
 	temp = []
+	# sample data according to number
+	# for i in range(len(data)):
+	# 	temp.append(data[i])
+	# 	if i % number == 0:
+	# 		sampled_data.append(sum(temp) / len(temp))
+	# 		temp = []
+
+	# sample data according to time span
+	inx = 1
 	for i in range(len(data)):
 		temp.append(data[i])
-		if i % number == 0:
+		if times[i] > number * inx:
 			sampled_data.append(sum(temp) / len(temp))
 			temp = []
+			inx += 1
 	return sampled_data
 
 
 def plot_price_trend(exchange):
-	times = []
-	prices = []
-	price = 0
-	quantity = 0
-	last_time = -1
-	for tape_item in exchange.tape:
-		if tape_item["type"] == "Trade":
-			cur_time = tape_item["time"]
-			if cur_time == last_time:
-				price += tape_item["price"] * tape_item["quantity"]
-				quantity += tape_item["quantity"]
-			else:
-				if quantity != 0:
-					times.append(cur_time)
-					prices.append(round(price / quantity, 2))
-				price = tape_item["price"] * tape_item["quantity"]
-				quantity = tape_item["quantity"]
-
-			last_time = cur_time
-
-	plt.plot(sample_data(prices, 50))
+	price_rolling_mean = pd.DataFrame.ewm(pd.Series(exchange.all_deal_prices), span=100).mean()
+	plt.plot(exchange.all_deal_prices)
+	plt.plot(price_rolling_mean)
+	plt.title("trade price trend")
 	plt.show()
-	plt.plot(times, prices)
-	plt.show()
+	# times = []
+	# prices = []
+	# price = 0
+	# quantity = 0
+	# last_time = -1
+	# for tape_item in exchange.tape:
+	# 	if tape_item["type"] == "Trade":
+	# 		cur_time = tape_item["time"]
+	# 		if cur_time == last_time:
+	# 			price += tape_item["price"] * tape_item["quantity"]
+	# 			quantity += tape_item["quantity"]
+	# 		else:
+	# 			if quantity != 0:
+	# 				times.append(cur_time)
+	# 				prices.append(round(price / quantity, 2))
+	# 			price = tape_item["price"] * tape_item["quantity"]
+	# 			quantity = tape_item["quantity"]
+	#
+	# 		last_time = cur_time
+	#
+	# sampled_data = sample_data(prices, times, 800)
+	# plt.plot(sampled_data)
+	# plt.show()
+	# plt.plot(times, prices)
+	# plt.show()
+	# return sampled_data
 
 
 def get_code_position():
