@@ -20,11 +20,7 @@ class MeanReversionTrader(Trader):
 		order = None
 		best_bid_price = exchange.bids.best_price
 		best_ask_price = exchange.asks.best_price
-		# if best_bid_price is None:
-		# 	best_bid_price = exchange.price
-		# if best_ask_price is None:
-		# 	best_ask_price = exchange.price
-		if len(exchange.all_deal_prices) == 0:
+		if len(exchange.prices) == 0:
 			return None
 		if random.random() < self.delta_mr:
 			self.compute_ema(exchange)
@@ -49,10 +45,18 @@ class MeanReversionTrader(Trader):
 		@param exchange: exchange
 		@return: None
 		"""
-		if (len(exchange.all_deal_prices) - len(self.all_ema)) / len(exchange.all_deal_prices) < 0.1:
-			return
-		length_to_be_processed = len(exchange.all_deal_prices) - len(self.all_ema)
-		for price_t in exchange.all_deal_prices[-length_to_be_processed:]:
-			self.ema_t = self.ema_t + self.alpha * (price_t - self.ema_t)
-			self.all_ema.append(self.ema_t)
-		self.sigma_t = np.std(self.all_ema, ddof=1)
+		# if (len(exchange.prices) - len(self.all_ema)) / len(exchange.prices) < 0.1:
+		# 	return
+		# length_to_be_processed = len(exchange.all_deal_prices) - len(self.all_ema)
+		# for price_t in exchange.all_deal_prices[-length_to_be_processed:]:
+		# 	self.ema_t = self.ema_t + self.alpha * (price_t - self.ema_t)
+		# 	self.all_ema.append(self.ema_t)
+		# self.sigma_t = np.std(self.all_ema, ddof=1)
+
+		price_t = exchange.price
+		self.ema_t = self.ema_t + self.alpha * (price_t - self.ema_t)
+		self.all_ema.append(self.ema_t)
+		if len(self.all_ema) > 500:
+			self.sigma_t = np.std(self.all_ema[-500:])
+		else:
+			self.sigma_t = np.std(self.all_ema, ddof=1)

@@ -134,5 +134,6 @@ test.py
 *.csv
 .idea
 logs
+figures
 price_trend_figures
 data

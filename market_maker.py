@@ -20,7 +20,7 @@ class MarketMaker(Trader):
 
 	def work(self, exchange, cur_time):
 		"""
-		prepare orders to be sent to exchange
+		Prepare orders to be sent to exchange
 		"""
 		ask_order = None
 		bid_order = None
@@ -37,15 +37,18 @@ class MarketMaker(Trader):
 		if best_ask_price is None:
 			best_ask_price = exchange.price
 
-		exchange_all_deal_prices = exchange.all_deal_prices[:]
+		# if best_bid_price is None or best_ask_price is None:
+		# 	return None, None
+
+		exchange_prices = exchange.all_deal_prices
 		# if the number of the dealt prices is not enough, the rolling-mean cannot be performed.
-		if len(exchange_all_deal_prices) < 2:
-			return ask_order, bid_order
+		if len(exchange_prices) < 2:
+			return None, None
 		# market maker sent orders to exchange according to probability delta_mm
 		if random.random() < self.delta_mm:
 			quantity_large = random.randint(self.quantity_min, self.quantity_max)
 			quantity_small = 1
-			if self.predict_next_order(exchange_all_deal_prices) == "buy":
+			if self.predict_next_order(exchange_prices) == "buy":
 				ask_order = self.sell(best_ask_price, quantity_large, cur_time)
 				bid_order = self.buy(best_bid_price, quantity_small, cur_time)
 			else:
@@ -53,13 +56,13 @@ class MarketMaker(Trader):
 				ask_order = self.sell(best_ask_price, quantity_small, cur_time)
 		return ask_order, bid_order
 
-	def predict_next_order(self, exchange_all_deal_prices):
+	def predict_next_order(self, exchange_prices):
 		"""
 		Predict the type of next order, buy or sell.
 		If buy, return true. Otherwise, return false.
 		"""
-		last_price = self.compute_rolling_mean(exchange_all_deal_prices)
-		penultimate_price = self.compute_rolling_mean(exchange_all_deal_prices[:-1])
+		last_price = self.compute_rolling_mean(exchange_prices)
+		penultimate_price = self.compute_rolling_mean(exchange_prices[:-1])
 		# price drop, the type of next order is sell
 		if last_price < penultimate_price:
 			return "sell"
@@ -67,10 +70,10 @@ class MarketMaker(Trader):
 			# price rise, the type of next order is buy
 			return "buy"
 
-	def compute_rolling_mean(self, exchange_all_deal_prices):
-		if len(exchange_all_deal_prices) < self.rolling_mean_window_size:
-			rolling_mean_price = sum(exchange_all_deal_prices) / len(exchange_all_deal_prices)
+	def compute_rolling_mean(self, exchange_prices):
+		if len(exchange_prices) < self.rolling_mean_window_size:
+			rolling_mean_price = sum(exchange_prices) / len(exchange_prices)
 		else:
-			rolling_mean_price = sum(exchange_all_deal_prices[-self.rolling_mean_window_size:]) / self.rolling_mean_window_size
+			rolling_mean_price = sum(exchange_prices[-self.rolling_mean_window_size:]) / self.rolling_mean_window_size
 		return rolling_mean_price
 

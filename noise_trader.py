@@ -9,7 +9,7 @@ class NoiseTrader(Trader):
 		super(NoiseTrader, self).__init__()
 		self.trader_id = "noise trader"
 		self.delta_nt = 0.75
-		self.buy_or_sell_prob = 0.5
+		self.buy_or_sell_prob = 0.50
 		# market order probability
 		self.alpha_m = 0.03
 		# limit order probability

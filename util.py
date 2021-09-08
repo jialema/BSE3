@@ -55,14 +55,33 @@ def sample_data(data, times, number):
 
 
 def plot_price_trend(exchange):
-	print("all trade prices: {}".format(len(exchange.all_deal_prices)))
-	trade_price_rolling_mean = pd.DataFrame.ewm(pd.Series(exchange.all_deal_prices), span=100).mean()
-	# plt.plot(exchange.all_deal_prices)
+	print("all prices: {}".format(len(exchange.prices)))
+	trade_price_rolling_mean = pd.DataFrame.ewm(pd.Series(exchange.prices), span=2000).mean()
+	plt.figure(figsize=(8, 4))
+	plt.plot(exchange.prices)
 	plt.plot(trade_price_rolling_mean)
-	plt.title("trade price trend")
+	plt.title("Price Trend")
+	plt.xlabel("Period")
+	plt.ylabel("Price")
+	plt.legend()
+	plt.savefig("figures/price trend up 100.png", dpi=400, bbox_inches='tight')
 	plt.show()
 	exchange.trade_price_rolling_mean = trade_price_rolling_mean
 
+def plot_order_scatter(agent_order):
+	bids = {"price": [], "quantity": []}
+	asks = {"price": [], "quantity": []}
+	for bid_order in agent_order["bids"]:
+		bids["price"].append(bid_order.price)
+		bids["quantity"].append(bid_order.quantity)
+
+	for ask_order in agent_order["asks"]:
+		asks["price"].append(ask_order.price)
+		asks["quantity"].append(ask_order.quantity)
+
+	plt.figure()
+	plt.scatter(bids["quantity"], bids["price"])
+	plt.show()
 
 def get_code_position():
 	position = "File \"{}\", line {}, in {}".format(

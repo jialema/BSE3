@@ -10,7 +10,9 @@ class Exchange(OrderBook):
 	def __init__(self, init_price=100, init_spread=0.05, tick_size=0.01):
 		super().__init__()
 		# newest deal price
+		self.init_price = init_price
 		self.price = init_price
+		self.prices = []
 		self.all_deal_prices = []
 		self.trade_prices_with_time = []
 		# price spread
