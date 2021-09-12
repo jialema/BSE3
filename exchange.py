@@ -1,12 +1,13 @@
 import sys
-from order import Order
 from order_book import OrderBook
-import time
 import copy
 
 
 class Exchange(OrderBook):
-
+	"""
+	This Class has reconstructed and updated the Exchange Class in BSE.
+	@author Jiale Ma
+	"""
 	def __init__(self, init_price=100, init_spread=0.05, tick_size=0.01):
 		super().__init__()
 		# newest deal price
@@ -99,6 +100,12 @@ class Exchange(OrderBook):
 			sys.exit("[Error] bad order_type value")
 
 	def make_match(self, order, cur_time):
+		"""
+		Making a match between Bid LOB and Ask LOB.
+		:param order: newest order
+		:param cur_time: current time
+		:return: trade result or None
+		"""
 		if self.asks.best_quantity is None or self.bids.best_quantity is None:
 			return None
 		best_ask_price = self.asks.best_price
@@ -138,7 +145,14 @@ class Exchange(OrderBook):
 			return transaction_record
 		return None
 
-	def process_order(self, cur_time, order, verbose):
+	def process_order(self, cur_time, order):
+		"""
+		Processing a new oder by invoking make_match method
+		:param cur_time: current time
+		:param order: newest order
+		:param verbose:
+		:return: trade results
+		"""
 		[quote_id, response] = self.add_order(order)
 		order.quote_id = quote_id
 		order_back_up = copy.deepcopy(order)
@@ -186,9 +200,6 @@ class Exchange(OrderBook):
 		return public_data
 
 	def tape_dump(self, file_name, file_mode, tape_mode):
-		"""
-		Currently tape_dump only writes a list of transactions
-		"""
 		dump_file = open(file_name, file_mode)
 		for tape_item in self.tape:
 			if tape_item["type"] == "Trade":

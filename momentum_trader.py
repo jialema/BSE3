@@ -3,6 +3,10 @@ import random
 
 
 class MomentumTrader(Trader):
+	"""
+	The implementation of momentum trader in the agent-based model.
+	@author Jiale Ma
+	"""
 	def __init__(self):
 		super(MomentumTrader, self).__init__()
 		self.trader_id = "momentum trader"
@@ -12,6 +16,12 @@ class MomentumTrader(Trader):
 		self.wealth = 100000
 
 	def work(self, exchange, cur_time):
+		"""
+		The trading logic of momentum traders
+		:param exchange: the instance of Exchange Class
+		:param cur_time: current time
+		:return: the order to be submitted
+		"""
 		order = None
 		if len(exchange.prices) < self.n_r:
 			return None

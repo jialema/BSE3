@@ -1,12 +1,10 @@
 from trader import Trader
-from order import Order
 import random
-import pandas as pd
-import time
 
 
 class MarketMaker(Trader):
 	"""
+	The implementation of market makers in agent-based model
 	@author Jiale Ma
 	"""
 
@@ -20,6 +18,7 @@ class MarketMaker(Trader):
 
 	def work(self, exchange, cur_time):
 		"""
+		The main logic of market maker agent
 		Prepare orders to be sent to exchange
 		"""
 		ask_order = None
@@ -77,6 +76,11 @@ class MarketMaker(Trader):
 			return None
 
 	def compute_rolling_mean(self, exchange_prices):
+		"""
+		Compute w-period rolling mean of price
+		:param exchange_prices: prices
+		:return: the price after rolling mean
+		"""
 		if len(exchange_prices) < self.rolling_mean_window_size:
 			rolling_mean_price = sum(exchange_prices) / len(exchange_prices)
 		else:

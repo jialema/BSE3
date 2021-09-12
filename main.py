@@ -5,11 +5,7 @@ from momentum_trader import MomentumTrader
 from mean_reversion_trader import MeanReversionTrader
 from noise_trader import NoiseTrader
 import util
-from pprint import pprint
 import os
-import matplotlib.pyplot as plt
-import statsmodels.tsa.api as smt
-import pandas as pd
 import statistics
 
 exchange = Exchange()
@@ -32,6 +28,9 @@ traders[momentum_trader.trader_id] = momentum_trader
 traders[mean_reversion_trader.trader_id] = mean_reversion_trader
 traders[noise_trader.trader_id] = noise_trader
 
+fig_dir = "figures"
+if not os.path.exists(fig_dir):
+	os.mkdir(fig_dir)
 data_dir = "data"
 if not os.path.exists(data_dir):
 	os.mkdir(data_dir)
@@ -64,12 +63,12 @@ def main():
 			if ask_order is not None:
 				mm_order["asks"].append(ask_order)
 				# sent ask order to exchange
-				trades = exchange.process_order(cur_time, ask_order, False)
+				trades = exchange.process_order(cur_time, ask_order)
 				util.process_trades(trades, traders, ask_order, cur_time)
 			if bid_order is not None:
 				mm_order["bids"].append(bid_order)
 				# sent bid order to exchange
-				trades = exchange.process_order(cur_time, bid_order, False)
+				trades = exchange.process_order(cur_time, bid_order)
 				util.process_trades(trades, traders, bid_order, cur_time)
 
 		# liquidity consumer
@@ -78,25 +77,25 @@ def main():
 			liquidity_consumer.make_decision()
 		order = liquidity_consumer.work(exchange, cur_time)
 		if order is not None:
-			trades = exchange.process_order(cur_time, order, False)
+			trades = exchange.process_order(cur_time, order)
 			util.process_trades(trades, traders, order, cur_time)
 
 		# momentum trader
 		order = momentum_trader.work(exchange, cur_time)
 		if order is not None:
-			trades = exchange.process_order(cur_time, order, False)
+			trades = exchange.process_order(cur_time, order)
 			util.process_trades(trades, traders, order, cur_time)
 
 		# mean reversion trader
 		order = mean_reversion_trader.work(exchange, cur_time, logger)
 		if order is not None:
-			trades = exchange.process_order(cur_time, order, False)
+			trades = exchange.process_order(cur_time, order)
 			util.process_trades(trades, traders, order, cur_time)
 
 		# noise trader
 		order = noise_trader.work(exchange, cur_time)
 		if order is not None:
-			trades = exchange.process_order(cur_time, order, False)
+			trades = exchange.process_order(cur_time, order)
 			util.process_trades(trades, traders, order, cur_time)
 		exchange.prices.append(exchange.price)
 		# logger.debug(exchange.price)
@@ -115,7 +114,7 @@ def main():
 	exchange.exception_transaction_dump(os.path.join(data_dir, "exception_records.csv"), "w")
 	exchange.orders_dump(os.path.join(data_dir, "orders.csv"), "w")
 
-	# util.plot_price_trend(exchange)
+	util.plot_price_trend(exchange)
 	# util.plot_order_scatter(mm_order)
 	# util.plot_order_hist(exchange)
 	# util.plot_order_proportion(exchange)
@@ -125,7 +124,7 @@ def main():
 	# statistics.concave_price_impact(exchange)
 	# statistics.volatility_clustering(exchange)
 	# statistics.fat_tailed_distribution(exchange)
-	statistics.return_auto_correlation(exchange)
+	# statistics.return_auto_correlation(exchange)
 
 
 if __name__ == "__main__":

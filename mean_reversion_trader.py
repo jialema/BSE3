@@ -4,6 +4,10 @@ import numpy as np
 
 
 class MeanReversionTrader(Trader):
+	"""
+	The implementation of mean reversion trader in the agent-based model
+	@author Jiale Ma
+	"""
 	def __init__(self):
 		super(MeanReversionTrader, self).__init__()
 		self.trader_id = "mean reversion trader"
@@ -17,6 +21,13 @@ class MeanReversionTrader(Trader):
 		self.all_ema = []
 
 	def work(self, exchange, cur_time, logger):
+		"""
+		The main logic of this agent.
+		:param exchange: the instance of Exchange Class
+		:param cur_time: current time
+		:param logger: the instance of Logger, for debugging code
+		:return: to be submitted order
+		"""
 		order = None
 		best_bid_price = exchange.bids.best_price
 		best_ask_price = exchange.asks.best_price

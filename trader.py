@@ -1,8 +1,11 @@
-import time
 from order import Order
 
 
 class Trader:
+	"""
+	The super Class of all agent Classes.
+	Define the basic methods of a Trader Class, like buy, sell.
+	"""
 	def __init__(self):
 		# trader ID code
 		self.trader_id = ""

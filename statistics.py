@@ -1,12 +1,8 @@
-import copy
 import math
-from functools import reduce
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import kurtosis
-import statsmodels.tsa.api as smt
-import sys
 import random
 import uuid
 

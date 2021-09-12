@@ -5,6 +5,10 @@ import math
 
 
 class NoiseTrader(Trader):
+	"""
+	The implementation of noise trader.
+	@author Jiale Ma
+	"""
 	def __init__(self):
 		super(NoiseTrader, self).__init__()
 		self.trader_id = "noise trader"
@@ -35,6 +39,12 @@ class NoiseTrader(Trader):
 		self.alpha_off_spr = 0.426
 
 	def work(self, exchange, cur_time):
+		"""
+		The main logic of noise traders
+		:param exchange: the instance of Exchange Class
+		:param cur_time: current time
+		:return: the order to be submitted
+		"""
 		order = None
 		if random.random() < self.delta_nt:
 			if random.random() <= self.buy_or_sell_prob:
