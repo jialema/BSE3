@@ -32,15 +32,16 @@ class MarketMaker(Trader):
 
 		best_bid_price = exchange.bids.best_price
 		best_ask_price = exchange.asks.best_price
-		if best_bid_price is None:
-			best_bid_price = exchange.price
-		if best_ask_price is None:
-			best_ask_price = exchange.price
+		# if best_bid_price is None:
+		# 	best_bid_price = exchange.price
+		# if best_ask_price is None:
+		# 	best_ask_price = exchange.price
 
-		# if best_bid_price is None or best_ask_price is None:
-		# 	return None, None
+		if best_bid_price is None or best_ask_price is None:
+			return None, None
 
-		exchange_prices = exchange.all_deal_prices
+		# exchange_prices = exchange.all_deal_prices
+		exchange_prices = exchange.prices
 		# if the number of the dealt prices is not enough, the rolling-mean cannot be performed.
 		if len(exchange_prices) < 2:
 			return None, None
@@ -48,12 +49,15 @@ class MarketMaker(Trader):
 		if random.random() < self.delta_mm:
 			quantity_large = random.randint(self.quantity_min, self.quantity_max)
 			quantity_small = 1
-			if self.predict_next_order(exchange_prices) == "buy":
+			next_order_type = self.predict_next_order(exchange_prices)
+			if next_order_type == "buy":
 				ask_order = self.sell(best_ask_price, quantity_large, cur_time)
 				bid_order = self.buy(best_bid_price, quantity_small, cur_time)
-			else:
+			elif next_order_type == "sell":
 				bid_order = self.buy(best_bid_price, quantity_large, cur_time)
 				ask_order = self.sell(best_ask_price, quantity_small, cur_time)
+			else:
+				return None, None
 		return ask_order, bid_order
 
 	def predict_next_order(self, exchange_prices):
@@ -66,9 +70,11 @@ class MarketMaker(Trader):
 		# price drop, the type of next order is sell
 		if last_price < penultimate_price:
 			return "sell"
-		else:
+		elif last_price > penultimate_price:
 			# price rise, the type of next order is buy
 			return "buy"
+		else:
+			return None
 
 	def compute_rolling_mean(self, exchange_prices):
 		if len(exchange_prices) < self.rolling_mean_window_size:

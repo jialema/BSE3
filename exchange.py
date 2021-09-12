@@ -23,6 +23,7 @@ class Exchange(OrderBook):
 		self.exception_transaction = []
 		self.orders_signs = []
 		self.mid_quotes = []
+		self.mid_prices = []
 
 	def add_order(self, order):
 		"""
@@ -140,7 +141,8 @@ class Exchange(OrderBook):
 	def process_order(self, cur_time, order, verbose):
 		[quote_id, response] = self.add_order(order)
 		order.quote_id = quote_id
-		self.all_orders_for_record.append(copy.deepcopy(order))
+		order_back_up = copy.deepcopy(order)
+		self.all_orders_for_record.append(order_back_up)
 		trades = []
 		while True:
 			trade = self.make_match(order, cur_time)
@@ -153,7 +155,7 @@ class Exchange(OrderBook):
 			self.mid_quotes.append({
 				"time": cur_time,
 				"mid_quote": mid_quote,
-				"quantity": order.quantity})
+				"quantity": order_back_up.quantity})
 		return trades
 
 	def publish_lob(self, cur_time, verbose):

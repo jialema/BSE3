@@ -2,6 +2,7 @@ import sys
 import logging
 import pandas as pd
 import matplotlib.pyplot as plt
+import uuid
 import numpy as np
 import math
 
@@ -58,15 +59,15 @@ def plot_price_trend(exchange):
 	print("all prices: {}".format(len(exchange.prices)))
 	trade_price_rolling_mean = pd.DataFrame.ewm(pd.Series(exchange.prices), span=2000).mean()
 	plt.figure(figsize=(8, 4))
-	plt.plot(exchange.prices)
+	# plt.plot(exchange.prices)
 	plt.plot(trade_price_rolling_mean)
 	plt.title("Price Trend")
 	plt.xlabel("Period")
 	plt.ylabel("Price")
-	plt.legend()
 	plt.savefig("figures/price trend up 100.png", dpi=400, bbox_inches='tight')
 	plt.show()
 	exchange.trade_price_rolling_mean = trade_price_rolling_mean
+
 
 def plot_order_scatter(agent_order):
 	bids = {"price": [], "quantity": []}
@@ -82,6 +83,88 @@ def plot_order_scatter(agent_order):
 	plt.figure()
 	plt.scatter(bids["quantity"], bids["price"])
 	plt.show()
+
+
+def plot_order_proportion(exchange):
+	all_trade_record = exchange.tape
+	total_quantity = 0
+	mm_quantity = 0
+	lc_quantity = 0
+	mr_quantity = 0
+	mt_quantity = 0
+	nt_quantity = 0
+	lc_last = 0
+	for trade in all_trade_record:
+		if trade["type"] == "Trade":
+			total_quantity += trade["quantity"]
+			if trade["ask"] == "market maker" or trade["bid"] == "market maker":
+				mm_quantity += trade["quantity"]
+			if trade["ask"] == "liquidity consumer" or trade["bid"] == "liquidity consumer":
+				lc_quantity += trade["quantity"]
+				lc_last = trade["time"]
+			if trade["ask"] == "mean reversion trader" or trade["bid"] == "mean reversion trader":
+				mr_quantity += trade["quantity"]
+			if trade["ask"] == "momentum trader" or trade["bid"] == "momentum trader":
+				mt_quantity += trade["quantity"]
+			if trade["ask"] == "noise trader" or trade["bid"] == "noise trader":
+				nt_quantity += trade["quantity"]
+
+	# for trade in all_trade_record:
+	# 	if trade["type"] == "Trade":
+	# 		total_quantity += trade["quantity"]
+	# 		if trade["ask"] == "market maker":
+	# 			mm_quantity += trade["quantity"]
+	# 		if trade["ask"] == "liquidity consumer":
+	# 			lc_quantity += trade["quantity"]
+	# 		if trade["ask"] == "mean reversion trader":
+	# 			mr_quantity += trade["quantity"]
+	# 		if trade["ask"] == "momentum trader":
+	# 			mt_quantity += trade["quantity"]
+	# 		if trade["ask"] == "noise trader":
+	# 			nt_quantity += trade["quantity"]
+	#
+	# 		if trade["bid"] == "market maker":
+	# 			mm_quantity += trade["quantity"]
+	# 		if trade["bid"] == "liquidity consumer":
+	# 			lc_quantity += trade["quantity"]
+	# 		if trade["bid"] == "mean reversion trader":
+	# 			mr_quantity += trade["quantity"]
+	# 		if trade["bid"] == "momentum trader":
+	# 			mt_quantity += trade["quantity"]
+	# 		if trade["bid"] == "noise trader":
+	# 			nt_quantity += trade["quantity"]
+	print(lc_last)
+	print(total_quantity)
+	print(mm_quantity, lc_quantity, mr_quantity, mt_quantity, nt_quantity)
+	# total_quantity = mm_quantity + lc_quantity + mr_quantity + mt_quantity + nt_quantity
+	# print(total_quantity)
+	ranges = ["noise\ntraders", "others"]
+	plt.pie([nt_quantity, total_quantity-nt_quantity], labels=ranges, autopct="%1.2f%%")
+	plt.savefig("figures/noise trader order proportion.png", dpi=400, bbox_inches='tight')
+	plt.show()
+
+
+def plot_order_hist(exchange):
+	all_trade_record = exchange.tape
+	quantities = []
+	for trade in all_trade_record:
+		if trade["type"] == "Trade":
+			quantities.append(trade["price"])
+	import scipy
+	mu = np.mean(quantities)
+	sigma = np.std(quantities)
+	num_bins = 100
+	n, bins, patches = plt.hist(quantities, num_bins, density=1)
+	y = scipy.stats.norm.pdf(bins, mu, sigma)
+
+	# plt.figure()
+	# plt.hist(quantities, bins=100)
+	plt.plot(bins, y)
+	plt.xlabel("Price")
+	plt.ylabel("Probability")
+	plt.savefig("figures/hist"+str(uuid.uuid4())+".png", dpi=400, bbox_inches="tight")
+	plt.show()
+
 
 def get_code_position():
 	position = "File \"{}\", line {}, in {}".format(

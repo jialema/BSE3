@@ -3,7 +3,7 @@ class Order:
 	@author Jiale Ma
 	"""
 
-	def __init__(self, trader_id="", order_type="", price=0, quantity=0, time="", quote_id=0):
+	def __init__(self, trader_id="", order_type="", price=None, quantity=None, time="", quote_id=0):
 		# trader i.d.
 		self.trader_id = trader_id
 		# order type

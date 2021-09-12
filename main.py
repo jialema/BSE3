@@ -49,8 +49,8 @@ def main():
 	mm_order = {"bids": [], "asks": []}
 
 	cur_time = 0
-	# total_time = 306000
-	total_time = 200000
+	total_time = 306000
+	# total_time = 20000
 	while cur_time < total_time:
 		if cur_time % 1000 == 0:
 			print("\ntime: {}".format(cur_time))
@@ -88,7 +88,7 @@ def main():
 			util.process_trades(trades, traders, order, cur_time)
 
 		# mean reversion trader
-		order = mean_reversion_trader.work(exchange, cur_time)
+		order = mean_reversion_trader.work(exchange, cur_time, logger)
 		if order is not None:
 			trades = exchange.process_order(cur_time, order, False)
 			util.process_trades(trades, traders, order, cur_time)
@@ -99,20 +99,29 @@ def main():
 			trades = exchange.process_order(cur_time, order, False)
 			util.process_trades(trades, traders, order, cur_time)
 		exchange.prices.append(exchange.price)
-		logger.debug(exchange.price)
+		# logger.debug(exchange.price)
+		if exchange.bids.best_price is not None and exchange.asks.best_price is not None:
+			mid_quote = round((exchange.asks.best_price + exchange.bids.best_price) / 2, 2)
+			exchange.mid_prices.append(mid_quote)
+		else:
+			if exchange.mid_prices:
+				exchange.mid_prices.append(exchange.mid_prices[-1])
+			else:
+				exchange.mid_prices.append(exchange.price)
+
 		cur_time += 1
 
 	exchange.tape_dump(os.path.join(data_dir, "transaction_records.csv"), "w", "keep")
 	exchange.exception_transaction_dump(os.path.join(data_dir, "exception_records.csv"), "w")
 	exchange.orders_dump(os.path.join(data_dir, "orders.csv"), "w")
 
-	# print(statistics.auto_correlation(exchange.orders_signs, 1)[0])
-	# print(statistics.hurst(exchange.orders_signs))
-	# print(statistics.find_price_spike(exchange.all_deal_prices))
-	util.plot_price_trend(exchange)
-	util.plot_order_scatter(mm_order)
-	# print(statistics.find_price_spike(exchange.trade_price_rolling_mean))
+	# util.plot_price_trend(exchange)
+	# util.plot_order_scatter(mm_order)
+	# util.plot_order_hist(exchange)
+	# util.plot_order_proportion(exchange)
 
+	# statistics.long_memory_in_order_flow(exchange)
+	# statistics.find_price_spike(exchange)
 	# statistics.concave_price_impact(exchange)
 	# statistics.volatility_clustering(exchange)
 	# statistics.fat_tailed_distribution(exchange)

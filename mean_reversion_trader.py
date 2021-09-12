@@ -12,11 +12,11 @@ class MeanReversionTrader(Trader):
 		self.alpha = 0.94
 		self.ema_t = 0
 		# this is an empirical value, given by author
-		self.k = 1
+		self.k = 0.01
 		self.sigma_t = None
 		self.all_ema = []
 
-	def work(self, exchange, cur_time):
+	def work(self, exchange, cur_time, logger):
 		order = None
 		best_bid_price = exchange.bids.best_price
 		best_ask_price = exchange.asks.best_price
@@ -36,6 +36,7 @@ class MeanReversionTrader(Trader):
 					return None
 				bid_price = best_bid_price + exchange.tick_size
 				order = self.buy(bid_price, self.v_mr, cur_time)
+			logger.debug(order)
 		return order
 
 	def compute_ema(self, exchange):
@@ -56,7 +57,7 @@ class MeanReversionTrader(Trader):
 		price_t = exchange.price
 		self.ema_t = self.ema_t + self.alpha * (price_t - self.ema_t)
 		self.all_ema.append(self.ema_t)
-		if len(self.all_ema) > 500:
-			self.sigma_t = np.std(self.all_ema[-500:])
+		if len(self.all_ema) > 1000:
+			self.sigma_t = np.std(self.all_ema[-1000:], ddof=1)
 		else:
 			self.sigma_t = np.std(self.all_ema, ddof=1)
