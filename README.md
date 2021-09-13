@@ -4,3 +4,4 @@ This project is based on [BSE](https://github.com/davecliff/BristolStockExchange
 ```
 python main.py
 ```
+If you want to run the code, please see run_git code.mp4
